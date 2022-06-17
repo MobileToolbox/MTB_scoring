@@ -10,6 +10,8 @@ import pandas as pd
 import boto3
 import io
 import datetime
+from functools import reduce
+import re
 
 dtoday=datetime.date.today()
 #######################################################
@@ -32,14 +34,13 @@ buffer=io.BytesIO()
 s3 = session.resource('s3')
 my_bucket = s3.Bucket(token['bucket'])
 print(my_bucket)
-object=s3.Object(token['bucket'], 'mtb/mtb_construct/parquet/dataset_weather/taskIdentifier=Vocabulary Form 1/year=2021/month=9/day=16/recordId=48IYe6Jr6yZfQFRrnI1HWfNr/part-00001-134a3a81-d470-44c5-8f66-f6c8e65c69c3.c000.snappy.parquet')
 
 
 
 def getS3data(my_bucket, path, token):
-    #mfs steps data:
+   
     df1=pd.DataFrame()
-    #MFS pilot 2   steps  list evverything in my_bucket including subdirectories
+    
     for objects in my_bucket.objects.filter(Prefix=path):
         buffer=io.BytesIO()
         object=s3.Object(token['bucket'], objects.key)
@@ -111,7 +112,7 @@ mfs_score_filter=mfs_scored[['partition_recordid','mfs_sum','taskStatus']]
 
 mfs_score_filter_meta=mfs_score_filter.merge(dfid, on='partition_recordid', how='left')
 
-
+mfs_score=mfs_score_filter_meta[['substudymemberships','healthcode','mfs_sum']]
 
 #PSM score----------------------------------------------------------------------------------------------------------------------------
 
@@ -128,6 +129,7 @@ psm_taskData_scrd2=psm_taskData_scrd[['partition_recordid','steps','psm.adj.sum'
 
 psm_taskData_scrd3=psm_taskData_scrd2.merge(dfid, on='partition_recordid', how='left')
 
+psm_score=psm_taskData_scrd3[['substudymemberships','healthcode','psm.adj.sum','psm.exact.sum']]
 
 
 #DCCS score------------------------------------------------------------------------------------------------------------------------
@@ -202,6 +204,8 @@ dccs_acc_score_filter=dccs_acc_scored[['partition_recordid','dccs_time','dccs_sc
 
 dccs_acc_score_filter_meta=dccs_acc_score_filter.merge(dfid, on='partition_recordid', how='left')
 
+dccs_score=dccs_acc_score_filter_meta[['substudymemberships','healthcode','dccs_time','dccs_score','DCCS_accuracy']]
+
 
 
 #Flanker score-------------------------------------------------------------------------------------------------------------------
@@ -209,15 +213,14 @@ dccs_acc_score_filter_meta=dccs_acc_score_filter.merge(dfid, on='partition_recor
 flkr_taskData=getS3data(my_bucket,"mtb/mtb_construct/parquet/dataset_taskData/taskIdentifier=Flanker Inhibitory Control/" , token)
 flkr_stepsData=getS3data(my_bucket,"mtb/mtb_construct/parquet/dataset_taskData_steps/taskIdentifier=Flanker Inhibitory Control/" , token)
 
-
-flkrt1=flkr_taskData[['id','identifier','responseTime_int']]
+flkrt1=flkr_stepsData[['id','identifier','responseTime_int']]
 
 
 flkrt2=flkrt1.pivot_table(values='responseTime_int', 
                    index='id'
                    ,columns='identifier').reset_index('id') 
 
-flkrs1=flkr_taskData[['id','identifier','score']]
+flkrs1=flkr_stepsData[['id','identifier','score']]
 
 flkrs2=flkrs1.pivot_table(values='score', 
                    index='id'
@@ -291,6 +294,8 @@ flkr_acc_scored=flkr_acc.merge(flkr_taskData, left_on='id', right_on='steps')
 flkr_acc_score_filter=flkr_acc_scored[['partition_recordid','flkr_time','flkr_score','FLANKER_accuracy','taskStatus']]
 
 flkr_acc_score_filter_meta=flkr_acc_score_filter.merge(dfid, on='partition_recordid', how='left')
+
+flkr_score=flkr_acc_score_filter_meta[['substudymemberships','healthcode','flkr_time','flkr_score','FLANKER_accuracy']]
 
 
 
@@ -462,6 +467,7 @@ nm_score_filter=nm_scored[['partition_recordid','numberMatch_raw','taskStatus']]
 
 nm_score_filter_meta=nm_score_filter.merge(dfid, on='partition_recordid', how='left')
 
+nm_score=nm_score_filter_meta[['substudymemberships','healthcode','numberMatch_raw']]
 
 
 #FNAME score-----------------------------------------------------------------------------------------------------------------------
@@ -531,39 +537,81 @@ fname_score_filter_meta=fname_score_filter.merge(dfid, on='partition_recordid', 
 fname_score_filter_meta2=fname_score_filter_meta.merge(fname_lookup,left_on='FNAME_sum', right_on='rawFname', how='left')
 fname_score_filter_meta2.rename(columns = {'theta':'FNAME_theta', 'sd':'FNAME_sd'}, inplace = True)
 
+fname_score=fname_score_filter_meta2[['substudymemberships','healthcode','FNAME_theta','FNAME_sd']]
+
 
 #Spelling------------------------------------------------------------------------------------------------------------------------
 
 spelling_taskData=getS3data(my_bucket,"mtb/mtb_construct/parquet/dataset_taskData/taskIdentifier=MTB Spelling Form 1/" , token)
 
 df_spelling_scrd=spelling_taskData
+df_spelling_scrd=df_spelling_scrd.reset_index()
+
 
 df_spelling_scrd['spell_THETA'] = df_spelling_scrd['finalTheta_double']
 df_spelling_scrd['spell_SE'] = df_spelling_scrd['finalSE_double']
-df_spelling_scrd.loc[df_spelling_scrd['spell_THETA'].isna(), 'spell_THETA'] = df_spelling_scrd['finalTheta_int']
-df_spelling_scrd.loc[df_spelling_scrd['spell_SE'].isna(), 'spell_SE'] = df_spelling_scrd['finalSE_int']
-
+df_spelling_scrd.loc[df_spelling_scrd['finalTheta_double'].isna(), 'spell_THETA'] = df_spelling_scrd['finalTheta_int']
+df_spelling_scrd.loc[df_spelling_scrd['finalSE_double'].isna(), 'spell_SE'] = df_spelling_scrd['finalSE_int']
 
 
 df_spelling_scrd2=df_spelling_scrd[['partition_recordid','steps','spell_THETA','spell_SE','taskStatus']]
 
 df_spelling_scrd3=df_spelling_scrd2.merge(dfid, on='partition_recordid', how='left')
 
+spelling_score=df_spelling_scrd3[['substudymemberships','healthcode','spell_THETA','spell_SE']]
+
+
+
 #Vocab------------------------------------------------------------------------------------------------------------------------
 
 vocab_taskData=getS3data(my_bucket,"mtb/mtb_construct/parquet/dataset_taskData/taskIdentifier=Vocabulary Form 1/" , token)
 
 df_vocab_scrd=vocab_taskData
+df_vocab_scrd=df_vocab_scrd.reset_index()
+
 
 df_vocab_scrd['vocab_THETA'] = df_vocab_scrd['finalTheta_double']
 df_vocab_scrd['vocab_SE'] = df_vocab_scrd['finalSE_double']
-df_vocab_scrd.loc[df_vocab_scrd['vocab_THETA'].isna(), 'vocab_THETA'] = df_vocab_scrd['finalTheta_int']
-df_vocab_scrd.loc[df_vocab_scrd['vocab_SE'].isna(), 'vocab_SE'] = df_vocab_scrd['finalSE_int']
+
+df_vocab_scrd.loc[df_vocab_scrd['finalTheta_double'].isna(), 'vocab_THETA'] = df_vocab_scrd['finalTheta_int']
+df_vocab_scrd.loc[df_vocab_scrd['finalSE_double'].isna(), 'vocab_SE'] = df_vocab_scrd['finalSE_int']
 
  
 df_vocab_scrd2=df_vocab_scrd[['partition_recordid','steps','vocab_THETA','vocab_SE','taskStatus']]
 
+
 df_vocab_scrd3=df_vocab_scrd2.merge(dfid, on='partition_recordid', how='left')
+
+
+vocab_score=df_vocab_scrd3[['substudymemberships','healthcode','vocab_THETA','vocab_SE']]
+
+#combine----------------------------------------------------------------------------------------------------------------------------
+groups=dfid[['dataGroups','healthcode']]
+groups=groups.drop_duplicates()
+
+
+#scores_merged = reduce(lambda  left,right: pd.merge(left,right,on=['substudymemberships','healthcode'],how='outer'), scored_dfs)
+scores_merged=mfs_score
+scores_merged=scores_merged.merge(dccs_score, how= 'outer', on=['substudymemberships','healthcode'])
+scores_merged=scores_merged.merge(fname_score, how= 'outer', on=['substudymemberships','healthcode'])
+scores_merged=scores_merged.merge(nm_score, how= 'outer', on=['substudymemberships','healthcode'])
+scores_merged=scores_merged.merge(flkr_score, how= 'outer', on=['substudymemberships','healthcode'])
+scores_merged=scores_merged.merge(psm_score, how= 'outer', on=['substudymemberships','healthcode'])
+scores_merged=scores_merged.merge(spelling_score, how= 'outer', on=['substudymemberships','healthcode'])
+scores_merged=scores_merged.merge(vocab_score, how= 'outer', on=['substudymemberships','healthcode'])
+
+
+scores_merged = scores_merged.merge(groups, on='healthcode')
+
+
+scores_merged2=scores_merged
+start = '|'
+end = '='
+start2 = '='
+end2 = '|'
+
+scores_merged2['study']= scores_merged2['substudymemberships'].map(lambda x: x[x.find(start)+len(start):x.rfind(end)])
+scores_merged2['id']= scores_merged2['substudymemberships'].map(lambda x: x[x.find(start2)+len(start2):x.rfind(end2)])
 
 
 
