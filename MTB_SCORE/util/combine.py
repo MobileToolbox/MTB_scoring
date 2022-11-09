@@ -20,12 +20,12 @@ def stack_score(df_combine):
     return df
 
 def filter_study(df):
-    start, end, start2, end2 = '|', '=', '=', '|'
+    start, end, start2, end2, start3, end3 = '|', '=', '=', ':', ':', '|'
 
-    df['study']= df['studyMemberships'].map(lambda x: x[x.find(start) + len(start):x.rfind(end)])
-    df['id']= df['studyMemberships'].map(lambda x: x[x.find(start2) + len(start2):x.rfind(end2)])
+    df['study_reference']= df['studyMemberships'].map(lambda x: x[x.find(start) + len(start):x.rfind(end)])
+    df['study_id']= df['studyMemberships'].map(lambda x: x[x.find(start2) + len(start2):x.rfind(end2)])
+    df = df.drop(columns=['studyMemberships'])
     return df
-
 
 def Combine(score_mfs,score_dccs,score_fname,score_nm,score_flanker,PSM_score,spelling_score,vocab_score,dfid):
     groups=dfid[['dataGroups','healthcode', 'recordid']]
