@@ -28,8 +28,7 @@ def get_synclient(USER_NAME= None, PASS=None):
         
     -----------------------------------------------------------------------------------------
     """
-    syn = synapseclient.login(USER_NAME, PASS)
-    return syn
+    return synapseclient.login(USER_NAME, PASS)
 
 def get_s3_fs(PROJECT_ID, syn):
     """
