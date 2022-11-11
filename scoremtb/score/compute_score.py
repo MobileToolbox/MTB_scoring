@@ -2,17 +2,25 @@
 
 # import the required packages
 import pandas as pd
-from MTB_SCORE.util import util as ut
-from MTB_SCORE.util.get_Stepdata import Get_Stepdata
-from MTB_SCORE.util.get_score_item import Get_score_items
-from MTB_SCORE.util.get_Scoresums import Get_Scoresum
-from MTB_SCORE.score.get_scores import Get_Score
-from MTB_SCORE.score.get_spellvocab_score import GetScore_SpellingAndVocab
+from scoremtb.util import util as ut
+from scoremtb.util.get_stepdata import get_stepinfo
+from scoremtb.util.get_scoreitems import get_items
+from scoremtb.util.get_scoresums import get_sums
+from scoremtb.score.get_scores import get_score
+from scoremtb.score.get_spellvocab_score import get_score_spell
 
-
-def get_drop_dict(t_type):
-    config = ut.get_config()
+def get_drop_dict(t_type, config):
+    """
+    -----------------------------------------------------------------------------------------
     
+    Get dictionary of drop column
+
+    Args:
+        t_type: Task name
+        config: Config file object
+
+    -----------------------------------------------------------------------------------------
+    """
     COL_DROP = {config['vocab_type']: [config['vocab_THETA'], config['vocab_SE']], 
                 config['spell_type']: [config['spell_THETA'], config['spell_SE']], 
                 config['PSM_type']: [config['psm_adj'], config['psm_exact']], config['MFS_type']: [config['mfs_sum']],
@@ -22,7 +30,7 @@ def get_drop_dict(t_type):
                }
     
     drop_col = COL_DROP[t_type]
-    return config, drop_col
+    return drop_col
 
 def score_spell_vocab_psm(task_data, dfid, t_type, study_membership):
     """
@@ -41,15 +49,17 @@ def score_spell_vocab_psm(task_data, dfid, t_type, study_membership):
         
     -----------------------------------------------------------------------------------------
     """
-    config, drop_col = get_drop_dict(t_type)
-    score = GetScore_SpellingAndVocab(task_data, dfid, t_type)
-    score = pd.merge(score, study_membership, how = 'inner', left_on = config['healthcode'], right_on = config['healthCode'])
+    config = ut.get_config()
+    drop_col = get_drop_dict(t_type, config)
     
-    score = score.drop(columns=[config['healthCode']])
+    score = get_score_spell(task_data, dfid, t_type)
+    score = pd.merge(score, study_membership, how = 'inner', on = 'healthcode')
+    
     score['score_dict'] = score[drop_col].to_dict(orient='records')
-    
     score = score.drop(columns=drop_col)
-    return score
+    
+    stacked_score = ut.stack_score(score)
+    return stacked_score
     
 def score_event_common(task_data, stepdata, dfid, t_type, study_membership):
     """
@@ -69,16 +79,18 @@ def score_event_common(task_data, stepdata, dfid, t_type, study_membership):
         
     -----------------------------------------------------------------------------------------
     """
-    config, drop_col = get_drop_dict(t_type)
+    config = ut.get_config()
+    drop_col = get_drop_dict(t_type, config)
     
-    step = Get_Stepdata(stepdata, t_type)
-    scoreitem = Get_score_items(t_type)
-    scoresum = Get_Scoresum(step, scoreitem, t_type)
+    step = get_stepinfo(stepdata, t_type)
+    scoreitem = get_items(t_type)
+    scoresum = get_sums(step, scoreitem, t_type)
     
-    score = Get_Score(scoresum, task_data, dfid, t_type)
-    score = pd.merge(score, study_membership, how='inner', left_on = config['healthcode'], right_on = config['healthCode'])
-    score = score.drop(columns=[config['healthCode']])
+    score = get_score(scoresum, task_data, dfid, t_type)
+    score = pd.merge(score, study_membership, how='inner', on = 'healthcode')
+    
     score['score_dict'] = score[drop_col].to_dict(orient='records')
-    
     score = score.drop(columns=drop_col)
-    return score
+    
+    stacked_score = ut.stack_score(score)
+    return stacked_score

@@ -13,7 +13,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger=logging.getLogger()
 
-def get_synclient(USER_NAME, PASS):
+def get_synclient(USER_NAME= None, PASS=None):
     """
     -----------------------------------------------------------------------------------------
     
@@ -31,18 +31,18 @@ def get_synclient(USER_NAME, PASS):
     syn = synapseclient.login(USER_NAME, PASS)
     return syn
 
-def get_token(PROJECT_ID, syn):
+def get_s3_fs(PROJECT_ID, syn):
     """
     -----------------------------------------------------------------------------------------
     
-    Get synapse credential
+    Get S3filesystem and bucket path
     
     Args:
         PROJECT_ID: Synapse project ID
         syn: Synapse object
         
     Returns:
-        results: synapse data
+        results: S3filesystem and path
         
     -----------------------------------------------------------------------------------------
     """
@@ -58,7 +58,7 @@ def get_data(syn, PROJECT_ID, dataset):
     """
     -----------------------------------------------------------------------------------------
     
-    Get synapse credential
+    Get data from synapse
     
     Args:
         PROJECT_ID: Synapse project ID
@@ -70,7 +70,7 @@ def get_data(syn, PROJECT_ID, dataset):
     -----------------------------------------------------------------------------------------
     """
     
-    s3, bucket_path = get_token(PROJECT_ID, syn)
+    s3, bucket_path = get_s3_fs(PROJECT_ID, syn)
     dataset_path = bucket_path + dataset
     
     dataset = pq.ParquetDataset(dataset_path, filesystem=s3)

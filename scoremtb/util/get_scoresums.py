@@ -1,17 +1,18 @@
 # MTB Scoring
 
 # import the required packages
-from MTB_SCORE.util import util as ut
+from scoremtb.util import util as ut
+import numpy as np
 
-def Get_Scoresum(data, s_items, type):
+def get_sums(data, s_items, type):
     """
     -----------------------------------------------------------------------------------------
     
     This is the function to get scoresum 
 
     Args: 
-        data: data output from Get_Stepdata function 
-        s_items: the list output from Get_Score_items function
+        data: filtered step data dataframe
+        s_items: score item list
         type: Task/Score
     
     Return:
@@ -37,10 +38,10 @@ def Get_Scoresum(data, s_items, type):
         data[0][config['dccs_time']]=data[0].loc[:,s_items].sum(axis=1)/1000
 
         data[1][config['dccs_score']]=data[1].loc[:,s_items].sum(axis=1)
-        dccs_time=data[0][[config['id'], config['dccs_time']]]
-        dccs_score=data[1][[config['id'], config['dccs_score']]]
+        dccs_time=data[0][['id', config['dccs_time']]]
+        dccs_score=data[1][['id', config['dccs_score']]]
 
-        data = dccs_time.merge(dccs_score, on = config['id'])
+        data = dccs_time.merge(dccs_score, on = 'id')
         data[config['DCCS_accuracy']] = data[config['dccs_score']]/data[config['dccs_time']]
         return data
     
@@ -48,10 +49,10 @@ def Get_Scoresum(data, s_items, type):
         data[0][config['flkr_time']] = data[0].loc[:,s_items].sum(axis=1)/1000
 
         data[1][config['flkr_score']] = data[1].loc[:,s_items].sum(axis=1)
-        flkr_time = data[0][[config['id'], config['flkr_time']]]
-        flkr_score = data[1][[config['id'], config['flkr_score']]]
+        flkr_time = data[0][['id', config['flkr_time']]]
+        flkr_score = data[1][['id', config['flkr_score']]]
 
-        data = flkr_time.merge(flkr_score, on = config['id'])
+        data = flkr_time.merge(flkr_score, on = 'id')
         data[config['FLANKER_accuracy']] = data[config['flkr_score']]/data[config['flkr_time']]
         return data
     

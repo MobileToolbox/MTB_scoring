@@ -1,9 +1,9 @@
 # MTB Scoring
 
 # import the required packages
-from MTB_SCORE.util import util as ut
+from scoremtb.util import util as ut
 
-def Get_score_items(type):
+def get_items(type):
     """
     -----------------------------------------------------------------------------------------
     
@@ -24,7 +24,7 @@ def Get_score_items(type):
             
     elif type == config['DCCS_type']:
          items= config['dccs_item']
-            
+
     elif type == config['Flanker_type']:
          items = config['flnk_item']
             
