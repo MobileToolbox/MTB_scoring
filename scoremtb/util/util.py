@@ -25,13 +25,13 @@ def stack_score(df_combine):
     """
     -----------------------------------------------------------------------------------------
 
-    Get stacked scoreId and values
+    Get stacked scores type and values
 
     Args:
-         df_combine: Concatanated dataframe for all events
+         df_combine: Concatanated dataframe for all the events
 
      Returns:
-        df: stacked dataframe with scoreID and its valuese
+        df: stacked dataframe with score type and its valuese
 
     -----------------------------------------------------------------------------------------
     """
@@ -41,4 +41,25 @@ def stack_score(df_combine):
     
     df.drop(columns='score_dict', inplace=True)
     df = df.join(split_score).reset_index(drop=True)
+    return df
+
+def filter_study(df):
+    """
+    -----------------------------------------------------------------------------------------
+
+    Filter participant info (study-membership)
+
+    Args:
+        df: Concatanated pandas dataframe for all the events
+
+    Returns:
+        df: pandas dataframe with study reference and ID
+
+    -----------------------------------------------------------------------------------------
+    """
+    start, end, start2, end2, start3, end3 = '|', '=', '=', ':', ':', '|'
+
+    df['study_reference']= df['studyMemberships'].map(lambda x: x[x.find(start) + len(start):x.rfind(end)])
+    df['study_id']= df['studyMemberships'].map(lambda x: x[x.find(start2) + len(start2):x.rfind(end2)])
+    df = df.drop(columns=['studyMemberships'])
     return df

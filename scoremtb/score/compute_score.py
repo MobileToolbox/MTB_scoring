@@ -3,94 +3,64 @@
 # import the required packages
 import pandas as pd
 from scoremtb.util import util as ut
-from scoremtb.util.get_stepdata import get_stepinfo
-from scoremtb.util.get_scoreitems import get_items
-from scoremtb.util.get_scoresums import get_sums
-from scoremtb.score.get_scores import get_score
-from scoremtb.score.get_spellvocab_score import get_score_spell
+from scoremtb.score import score_commons as sc
 
-def get_drop_dict(t_type, config):
+def get_score(task_data, stepdata, dfid, assmnt_val, study_membership):
     """
     -----------------------------------------------------------------------------------------
     
-    Get dictionary of drop column
-
-    Args:
-        t_type: Task name
-        config: Config file object
-
-    -----------------------------------------------------------------------------------------
-    """
-    COL_DROP = {config['vocab_type']: [config['vocab_THETA'], config['vocab_SE']], 
-                config['spell_type']: [config['spell_THETA'], config['spell_SE']], 
-                config['PSM_type']: [config['psm_adj'], config['psm_exact']], config['MFS_type']: [config['mfs_sum']],
-                config['DCCS_type']: [config['dccs_time'], config['dccs_score'], config['DCCS_accuracy']],
-                config['fname_type']: [config['FNAME_theta'], config['FNAME_sd']], config['NM_type']: [config['numberMatch_raw']],
-                config['Flanker_type']: [config['flkr_time'], config['flkr_score'], config['FLANKER_accuracy']]
-               }
-    
-    drop_col = COL_DROP[t_type]
-    return drop_col
-
-def score_spell_vocab_psm(task_data, dfid, t_type, study_membership):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Spell/Vocab/PSM score computation
+    Compute score for a given assesment (like: PSM/Vocab/Speell/DCCS etc.)
     
     Args:
-        task_data: taskdata downloaded from Synapse
-        dfid: metadata downloaded from Synapse
-        t_type: Task name
+        task_data: taskdata pandas dataframe downloaded from Synapse
+        stepdata: stepdata pandas dataframe downloaded from Synapse
+        dfid: metadata pandas dataframe downloaded from Synapse
+        assmnt_val: Assesment value
         study_membership: study membership info
         
     Return:
-        Spell/Vocab/PSM score dataframe
+        A pandas dataframe with stacked MTB scores for a given assesment
         
     -----------------------------------------------------------------------------------------
     """
     config = ut.get_config()
-    drop_col = get_drop_dict(t_type, config)
+    assmnt_val = assmnt_val.lower()
     
-    score = get_score_spell(task_data, dfid, t_type)
-    score = pd.merge(score, study_membership, how = 'inner', on = 'healthcode')
+    if assmnt_val == 'psm' or assmnt_val == 'vocabulary' or assmnt_val == 'spelling':
+        score_df = sc.get_svp_score(task_data, dfid, assmnt_val, config)
     
-    score['score_dict'] = score[drop_col].to_dict(orient='records')
-    score = score.drop(columns=drop_col)
+    else:
+        score_df = sc.get_common_score(stepdata, task_data, dfid, assmnt_val, config)
+        
+    score_df = pd.merge(score_df, study_membership, how='inner', on = 'healthcode')
+    score_df['score_dict'] = score_df[config[assmnt_val + '_score']].to_dict(orient='records')
+    score_df = score_df.drop(columns=config[assmnt_val + '_score'])
     
-    stacked_score = ut.stack_score(score)
+    stacked_score = ut.stack_score(score_df)
     return stacked_score
-    
-def score_event_common(task_data, stepdata, dfid, t_type, study_membership):
+
+def combine_scores(score_list, dfid):
     """
     -----------------------------------------------------------------------------------------
-    
-    DCCS/Flanker/MFS/Fname/Number Match score computation
-    
-    Args:
-        task_data: taskdata downloaded from Synapse
-        stepdata: stepdata downloaded from Synapse
-        dfid: metadata downloaded from Synapse
-        t_type: Task name
-        study_membership: study membership info
-        
-    Return:
-        DCCS/Flanker/MFS/Fname/Number Match score dataframe
-        
+
+    Concatenating assesment scores
+
+    Args: 
+        score_list: list of score for each assesment
+        dfid: metadata pandas dataframe downloaded from Synapse
+
+    Returns:
+       scores_merged: A concatenated stacked pandas df with MTB score
+
     -----------------------------------------------------------------------------------------
     """
-    config = ut.get_config()
-    drop_col = get_drop_dict(t_type, config)
+
+    groups = dfid[['dataGroups','healthcode', 'recordid']]
+    groups = groups.drop_duplicates()
     
-    step = get_stepinfo(stepdata, t_type)
-    scoreitem = get_items(t_type)
-    scoresum = get_sums(step, scoreitem, t_type)
+    df_combine = pd.concat(score_list).reset_index(drop=True)
+    df_combine = ut.filter_study(df_combine)
     
-    score = get_score(scoresum, task_data, dfid, t_type)
-    score = pd.merge(score, study_membership, how='inner', on = 'healthcode')
-    
-    score['score_dict'] = score[drop_col].to_dict(orient='records')
-    score = score.drop(columns=drop_col)
-    
-    stacked_score = ut.stack_score(score)
-    return stacked_score
+    #Merging datagroups using healthcode & recordId
+    scores_merged = df_combine.merge(groups, on=['healthcode', 'recordid'], how='left')
+    return scores_merged

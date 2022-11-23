@@ -30,14 +30,14 @@ def get_synclient(USER_NAME= None, PASS=None):
     """
     return synapseclient.login(USER_NAME, PASS)
 
-def get_s3_fs(PROJECT_ID, syn):
+def get_s3_fs(entity_id, syn):
     """
     -----------------------------------------------------------------------------------------
     
     Get S3filesystem and bucket path
     
     Args:
-        PROJECT_ID: Synapse project ID
+        entity_id: Synapse entity ID
         syn: Synapse object
         
     Returns:
@@ -46,30 +46,31 @@ def get_s3_fs(PROJECT_ID, syn):
     -----------------------------------------------------------------------------------------
     """
     
-    token = syn.get_sts_storage_token(PROJECT_ID, permission="read_only")
+    token = syn.get_sts_storage_token(entity_id, permission="read_only")
     s3 = fs.S3FileSystem(access_key=token['accessKeyId'], secret_key = token['secretAccessKey'], 
                          session_token = token['sessionToken'])
     
     bucket_path = token['bucket']+'/'+token['baseKey']+'/'
     return s3, bucket_path
 
-def get_data(syn, PROJECT_ID, dataset):
+def parquet_2_df(syn, entity_id, dataset):
     """
     -----------------------------------------------------------------------------------------
     
-    Get data from synapse
+    Loading (from synapse) and converting parquet dataset to pandas dataframe
     
     Args:
-        PROJECT_ID: Synapse project ID
-        syn: Synapse object
+        syn: Synapse client object
+        entity_id: Synapse entity ID
+        dataset: data source relative path (like: dataset_metadata)
         
     Returns:
-        results: synapse data
+        results: Pandas dataframe with dataset from Synapse.
         
     -----------------------------------------------------------------------------------------
     """
     
-    s3, bucket_path = get_s3_fs(PROJECT_ID, syn)
+    s3, bucket_path = get_s3_fs(entity_id, syn)
     dataset_path = bucket_path + dataset
     
     dataset = pq.ParquetDataset(dataset_path, filesystem=s3)
