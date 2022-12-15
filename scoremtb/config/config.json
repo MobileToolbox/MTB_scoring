@@ -30,7 +30,7 @@
     "spelling_score": ["spell_theta", "spell_se"],
     "scores_final_cols": ["scores_finalTheta_double", "scores_finalSE_double"],
     
-    "common_cols": ["healthcode", "recordid", "assessmentid", "deviceInfo", "startDate", "endDate", "participantversion", "clientinfo", "sessionguid", "taskStatus_val"],
+    "common_cols": ["healthcode", "recordid", "assessmentid", "deviceInfo", "startDate", "endDate", "participantversion", "clientinfo", "sessionguid", "taskStatus_val", "sessionstarteventid"],
     
     "memory-for-sequences_item": ["MFS_2_1", "MFS_2_2", "MFS_2_3", "MFS_3_1", "MFS_3_2", "MFS_3_3", "MFS_3_4", "MFS_3_5", "MFS_3_6", "MFS_4_1", "MFS_4_2", "MFS_4_3", "MFS_5_1", "MFS_5_2", "MFS_5_3", "MFS_6_1", "MFS_6_2", "MFS_6_3", "MFS_7_1", "MFS_7_2", "MFS_7_3", "MFS_8_1", "MFS_8_2", "MFS_8_3", "MFS_9_1", "MFS_9_2", "MFS_9_3", "MFS_10_1", "MFS_10_2", "MFS_10_3"],
     

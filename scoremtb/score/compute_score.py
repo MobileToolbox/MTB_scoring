@@ -63,4 +63,5 @@ def combine_scores(score_list, dfid):
     
     #Merging datagroups using healthcode & recordId
     scores_merged = df_combine.merge(groups, on=['healthcode', 'recordid'], how='left')
+    scores_merged[['participant_id', 'sessionguid']] = scores_merged[['participant_id', 'sessionguid']].astype('str')
     return scores_merged

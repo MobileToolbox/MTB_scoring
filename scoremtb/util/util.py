@@ -60,6 +60,6 @@ def filter_study(df):
     start, end, start2, end2, start3, end3 = '|', '=', '=', ':', ':', '|'
 
     df['study_reference']= df['studyMemberships'].map(lambda x: x[x.find(start) + len(start):x.rfind(end)])
-    df['study_id']= df['studyMemberships'].map(lambda x: x[x.find(start2) + len(start2):x.rfind(end2)])
+    df['participant_id']= df['studyMemberships'].map(lambda x: x[x.find(start2) + len(start2):x.rfind(end2)])
     df = df.drop(columns=['studyMemberships'])
     return df
