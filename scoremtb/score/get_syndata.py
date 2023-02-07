@@ -13,22 +13,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger=logging.getLogger()
 
-def get_synclient(USER_NAME= None, PASS=None):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Get synapse credential
-    
-    Args:
-        USER_NAME: Username
-        PASS: Password
-        
-    Returns:
-        results: synapse object
-        
-    -----------------------------------------------------------------------------------------
-    """
-    return synapseclient.login(USER_NAME, PASS)
 
 def get_s3_fs(entity_id, syn):
     """
