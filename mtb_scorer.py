@@ -151,16 +151,18 @@ def process_scores(args, config):
     -----------------------------------------------------------------------------------------
     """
     for key, value in config['project_id'].items():
-        file_path = os.path.join(home_path, 'MTB_' + key + '_scores.csv')
-        
-        metadata = load_data(syn, config['project_id'][key])
-        study_df = get_studyreference(syn, config['study_id'][key])
-        
-        compute_scores(metadata, study_df, 'MTB_' + key + '_scores')
-        upload_score(syn, file_path, args.git, config['dest_id'][key])
+        try:
 
-        #cleaning processed score
-        clean_score(file_path)
+            file_path = os.path.join(home_path, 'MTB_' + key + '_scores.csv')
+            metadata = load_data(syn, config['project_id'][key])
+            study_df = get_studyreference(syn, config['study_id'][key])
+            
+            compute_scores(metadata, study_df, 'MTB_' + key + '_scores')
+            upload_score(syn, file_path, args.git, config['dest_id'][key])
+            clean_score(file_path)#cleaning processed score
+
+        except Exception as e:
+            logger.info('Error in scoring pipeline')
         
 
 if __name__ == "__main__":
