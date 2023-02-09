@@ -27,7 +27,7 @@ def get_score(task_data, stepdata, dfid, assmnt_val, study_membership):
     assmnt_val = assmnt_val.lower()
     
     if assmnt_val == 'psm' or assmnt_val == 'vocabulary' or assmnt_val == 'spelling':
-        score_df = sc.get_svp_score(task_data, dfid, assmnt_val, config)
+        score_df = sc.get_svp_score(task_data, dfid, assmnt_val, config, study_membership)
     
     else:
         score_df = sc.get_common_score(stepdata, task_data, dfid, assmnt_val, config)
