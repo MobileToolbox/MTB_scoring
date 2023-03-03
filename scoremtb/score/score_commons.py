@@ -122,7 +122,7 @@ def get_lookup(config):
     lookup_df['sd'] = sd
     return lookup_df
 
-def get_svp_score(task_data, dfid, assmnt_val, config):
+def get_svp_score(task_data, dfid, assmnt_val, config, study_membership):
     """
     -----------------------------------------------------------------------------------------
     
@@ -134,6 +134,7 @@ def get_svp_score(task_data, dfid, assmnt_val, config):
         dfid: metadata pandas dataframe downloaded from Synapse
         assmnt_val: assesment value (like: spelling, vocabulary  etc.)
         config: configuration file object
+        study_membership: study membership/participant info
     
     Return:
         A pandas dataframe with MTB scores for a given assesment
@@ -143,7 +144,7 @@ def get_svp_score(task_data, dfid, assmnt_val, config):
     common_cols = config['common_cols']
     
     task_filter = task_data[task_data['assessmentid'] == assmnt_val].reset_index()
-    task_filter = filter_assesment(assmnt_val, config, task_filter)
+    task_filter = filter_assesment(assmnt_val, config, task_filter, study_membership)
     
     task_filter = task_filter[['recordid', 'steps'] + config[assmnt_val + '_score']]
     merge_df = task_filter.merge(dfid, on = 'recordid', how = 'left')
@@ -151,7 +152,36 @@ def get_svp_score(task_data, dfid, assmnt_val, config):
     score_df = merge_df[common_cols + config[assmnt_val + '_score']]
     return score_df
 
-def filter_assesment(assmnt_val, config, task_filter):
+def filter_scorecol(config, study_membership):
+    """
+    -----------------------------------------------------------------------------------------
+    
+    Temp fix to handle different score column name
+
+    Args: 
+        config: configuration file object
+        study_membership: study membership/participant info
+        
+    Return:
+        score columns
+    
+    -----------------------------------------------------------------------------------------
+    """
+    score_col = config['scores_final_cols']
+    
+    if len(study_membership)>0:
+        studyid = study_membership['studyMemberships'][0].split(':')[1]
+        studyid = studyid.replace('|', '')
+        
+        if studyid == 'htshxm':
+            score_col = config['scores_final_cols_ucsd']
+        
+        elif studyid == 'cxhnxd':
+            score_col = config['scores_final_cols_wustl']
+            
+    return score_col
+
+def filter_assesment(assmnt_val, config, task_filter, study_membership):
     """
     -----------------------------------------------------------------------------------------
     
@@ -162,17 +192,20 @@ def filter_assesment(assmnt_val, config, task_filter):
         assmnt_val: assesment value (like: spelling, vocabulary and PSM)
         config: configuration file object
         task_filter: assesment wise filtered taskdata pandas dataframe
+        study_membership: study membership/participant info
         
     Return:
         A pandas dataframe with processed MTB score for a given assesment
     
     -----------------------------------------------------------------------------------------
     """
+    score_col = filter_scorecol(config, study_membership)
+    
     if assmnt_val == 'psm':
         task_filter = filter_psm(assmnt_val, config, task_filter)
     
     else:
-        task_filter[config[assmnt_val + '_score']] = task_filter[config['scores_final_cols']]
+        task_filter[config[assmnt_val + '_score']] = task_filter[score_col]
     return task_filter
 
 def filter_psm(assmnt_val, config, task_filter):

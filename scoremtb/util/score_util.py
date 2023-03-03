@@ -86,9 +86,11 @@ def process_score(data, assmnt_val, s_items, config):
     -----------------------------------------------------------------------------------------
     """
     if assmnt_val == 'dccs' or assmnt_val == 'flanker':
-        data[0][config[assmnt_val + '_score'][0]] = data[0].loc[:,s_items].sum(axis=1)/1000
+        s_items1 = [item for item in s_items if item in list(data[0].columns)]
+        s_items2 = [item for item in s_items if item in list(data[1].columns)]
 
-        data[1][config[assmnt_val + '_score'][1]] = data[1].loc[:,s_items].sum(axis=1)
+        data[0][config[assmnt_val + '_score'][0]] = data[0].loc[:,s_items1].sum(axis=1)/1000
+        data[1][config[assmnt_val + '_score'][1]] = data[1].loc[:,s_items2].sum(axis=1)
         dccs_time=data[0][['id', config[assmnt_val + '_score'][0]]]
         dccs_score=data[1][['id', config[assmnt_val + '_score'][1]]]
 
@@ -96,9 +98,11 @@ def process_score(data, assmnt_val, s_items, config):
         data[config[assmnt_val + '_score'][2]] = data[config[assmnt_val + '_score'][1]]/data[config[assmnt_val + '_score'][0]]
     
     elif assmnt_val == 'fnameb':
+        s_items = [item for item in s_items if item in list(data.columns)]
         data[config[assmnt_val + '_sum']]=data.loc[:,s_items].sum(axis=1)
     
     else:
+        s_items = [item for item in s_items if item in list(data.columns)]
         data[config[assmnt_val + '_score'][0]]=data.loc[:,s_items].sum(axis=1)
     
     return data
