@@ -55,6 +55,7 @@ def get_studyreference(syn, table_id):
         
     -----------------------------------------------------------------------------------------
     """
+    print(table_id)
     table_syn = syn.tableQuery('SELECT healthCode, participantVersion, studyMemberships FROM '+ table_id)
     
     study_reference = (table_syn.asDataFrame()
@@ -151,18 +152,13 @@ def process_scores(args, config):
     -----------------------------------------------------------------------------------------
     """
     for key, value in config['project_id'].items():
-        try:
-
-            file_path = os.path.join(home_path, 'MTB_' + key + '_scores.csv')
-            metadata = load_data(syn, config['project_id'][key])
-            study_df = get_studyreference(syn, config['study_id'][key])
+        file_path = os.path.join(home_path, 'MTB_' + key + '_scores.csv')
+        metadata = load_data(syn, config['project_id'][key])
+        study_df = get_studyreference(syn, config['study_id'][key])
             
-            compute_scores(metadata, study_df, 'MTB_' + key + '_scores')
-            upload_score(syn, file_path, args.git, config['dest_id'][key])
-            clean_score(file_path)#cleaning processed score
-
-        except Exception as e:
-            logger.info('Error in scoring pipeline')
+        compute_scores(metadata, study_df, 'MTB_' + key + '_scores')
+        upload_score(syn, file_path, args.git, config['dest_id'][key])
+        clean_score(file_path)#cleaning processed score
         
 
 if __name__ == "__main__":
