@@ -16,10 +16,7 @@ logger = logging.getLogger()
 home_path = os.path.join(os.getcwd(), 'MTB_scoring')
 
 def load_data(syn, project_id):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Loading parquet data into pandas dataframe
+    """ Loading parquet data into pandas dataframe
     
     Args:
         syn: Synapse object
@@ -27,8 +24,6 @@ def load_data(syn, project_id):
         
     Return:
         metadata pandas dataframe
-        
-    -----------------------------------------------------------------------------------------
     """
     dfid = gsyn.parquet_2_df(syn, project_id, 'dataset_archivemetadata_v1/')
     stepdata = gsyn.parquet_2_df(syn, project_id, 'dataset_sharedschema_v1_steps/')
@@ -41,10 +36,7 @@ def load_data(syn, project_id):
     return dfid, stepdata, task_data
 
 def get_studyreference(syn, table_id):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Loading study level participant information
+    """ Loading study level participant information
     
     Args:
         syn: Synapse object
@@ -52,8 +44,6 @@ def get_studyreference(syn, table_id):
         
     Return:
         participant info pandas dataframe
-        
-    -----------------------------------------------------------------------------------------
     """
     print(table_id)
     table_syn = syn.tableQuery('SELECT healthCode, participantVersion, studyMemberships FROM '+ table_id)
@@ -69,10 +59,7 @@ def get_studyreference(syn, table_id):
 
 
 def compute_scores(meta_info, study_df, filename):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Calculating MTB score
+    """Calculating MTB score
     
     Args:
         meta_info: meta info pandas dataframe
@@ -81,8 +68,6 @@ def compute_scores(meta_info, study_df, filename):
         
     Return:
         Comnined processed socre for each task
-        
-    -----------------------------------------------------------------------------------------
     """
     spelling_score = cs.get_score(meta_info[2], meta_info[1], meta_info[0], 'spelling', study_df) #Spelling
     vocab_score = cs.get_score(meta_info[2], meta_info[1], meta_info[0], 'vocabulary', study_df) #vocabulary
@@ -105,10 +90,7 @@ def compute_scores(meta_info, study_df, filename):
     return stack_merged
 
 def upload_score(syn, file_path, git_path, des_synid):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Upload final score to Syanpse
+    """ Upload final score to Syanpse
     
     Args:
         syn: synapse object
@@ -117,39 +99,30 @@ def upload_score(syn, file_path, git_path, des_synid):
         des_synid: destination synID
         
     Return:
-        Comnined processed socre for each task
-        
-    -----------------------------------------------------------------------------------------
+        Comnined processed score for each task
     """
     entity = File(file_path, parent = des_synid)
     syn.store(entity, executed = git_path)
     logger.info('score uploaded sucessfully......')
+
     
 def clean_score(file_path):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Removing processed socre from local
+    """Removing processed socre from local
     
     Args:
         file_path: file location
         
-    -----------------------------------------------------------------------------------------
     """
     if os.path.exists(file_path):
         os.remove(file_path)
     
 def process_scores(args, config):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Processing and uploading MTB scores
+    """ Processing and uploading MTB scores
     
     Args:
         args: input arguments
         config: configuration object
         
-    -----------------------------------------------------------------------------------------
     """
     for key, value in config['project_id'].items():
         file_path = os.path.join(home_path, 'MTB_' + key + '_scores.csv')
