@@ -1,40 +1,27 @@
 {
-    "project_id": {"WUSTL":"syn29357510", "UCSD":"syn29357537", "Emory":"syn30795665", "MGH_Harvard":"syn30034463", "UCSF":"syn29357579"},
-    "study_id": {"WUSTL":"syn29300096", "UCSD":"syn29300164", "Emory":"syn29456953", "MGH_Harvard":"syn29456517", "UCSF":"syn29300177"},
-    "dest_id": {"WUSTL":"syn45243884", "UCSD":"syn45245672", "Emory":"syn45245674","MGH_Harvard":"syn45245676", "UCSF":"syn43555830"},
-    
+
+    "project_id": {"MGH2":"syn51125855", "all_assessments":"syn51121829", "WUSTL":"syn29357510", "UCSD":"syn29357537", "Emory":"syn30795665", "MGH_Harvard":"syn30034463", "UCSF":"syn29357579"},
+    "study_id": {"MGH2":"syn51083927", "all_assessments":"syn51109161", "WUSTL":"syn29300096", "UCSD":"syn29300164", "Emory":"syn29456953", "MGH_Harvard":"syn29456517", "UCSF":"syn29300177"},
+    "dest_id": {"MGH2":"syn51125856", "all_assessments":"syn51121830", "WUSTL":"syn45243884", "UCSD":"syn45245672", "Emory":"syn45245674","MGH_Harvard":"syn45245676", "UCSF":"syn43555830"},
+
+
     "sd": [0.583,0.565,0.55,0.54,0.532,0.527,0.523,0.52,0.518,0.516,0.513,0.51,0.506,0.502,0.496,0.489,0.482,0.475,0.469,0.463,0.458,0.454,0.451,0.449,0.449,0.45,0.453,0.457,0.462,0.47,0.479,0.491,0.505,0.523,0.546,0.573,0.608],
     "theta": [-3.532,-3.306,-3.102,-2.916,-2.746,-2.59,-2.445,-2.31,-2.183,-2.061,-1.944,-1.83,-1.717,-1.603,-1.487,-1.368,-1.245,-1.117,-0.985,-0.848,-0.707,-0.561,-0.411,-0.256,-0.098,0.066,0.234,0.407,0.587,0.774,0.97,1.176,1.395,1.63,1.886,2.168,2.485],
     
-    "dccs": "dccs",
     "dccs_score": ["dccs_time", "dccs_score", "dccs_accuracy"],
-    
-    "flanker": "flanker",
     "flanker_score": ["flkr_time", "flkr_score", "flkr_accuracy"],
-    
-    "memory-for-sequences": "memory-for-sequences",
     "memory-for-sequences_score": ["mfs_sum"],
-    
-    "number-match": "number-match",
     "number-match_score": ["numberMatch_raw"],
-
-    "fnameb": "fnameb",
     "fnameb_sum": "FNAME_sum",
     "fnameb_score": ["fname_theta", "fname_sd"],
-
-    "psm": "psm",
-    "psm_adjacentp": ["scores_adjacentPairs1", "scores_adjacentPairs2"],
-    "psm_exactm": ["scores_exactMatch1", "scores_exactMatch2"],
+    "vocabulary_score": ["vocab_theta", "vocab_se"],
+    "spelling_score": ["spell_theta", "spell_se"],
     "psm_score": ["psm.adj.sum", "psm.exact.sum"],
 
-    "vocabulary": "vocabulary",
-    "vocabulary_score": ["vocab_theta", "vocab_se"],
+    "psm_adjacentp": ["scores_adjacentPairs1", "scores_adjacentPairs2"],
+    "psm_exactm": ["scores_exactMatch1", "scores_exactMatch2"],
 
-    "spelling": "spelling",
-    "spelling_score": ["spell_theta", "spell_se"],
-    "scores_final_cols": ["scores_finalTheta_double", "scores_finalSE_double"],
-    "scores_final_cols_ucsd": ["scores_finalTheta", "scores_finalSE_double"],
-    "scores_final_cols_wustl": ["scores_finalTheta", "scores_finalSE"],
+    "scores_final_cols": ["scores_finalTheta", "scores_finalSE"],
     
     "common_cols": ["healthcode", "recordid", "assessmentid", "deviceInfo", "startDate", "endDate", "participantversion", "clientinfo", "sessionguid", "taskStatus_val", "sessionstarteventid"],
     
