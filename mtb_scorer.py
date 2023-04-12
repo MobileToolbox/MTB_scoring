@@ -32,23 +32,25 @@ def studyEntityIds(syn, studyId):
     entities = list(syn.getChildren(studyId))
     entDict =dict()
     entDict['projectId'] = studyId
+
     try:
         entDict['bridgeFileViewId'] = [ent['id'] for ent in entities if ent['name']=='Bridge Raw Data View' and
                                        ent['type']=='org.sagebionetworks.repo.model.table.EntityView'][0]
     except IndexError:
         entDict['bridgeFileViewId'] = None
-
+        logger.warning(f'Study {studyId} project missing file view in Synapse.')
     try:
         entDict['participantVersionsId'] = [ent['id'] for ent in entities if ent['name']=='Participant Versions' and
                                             ent['type']=='org.sagebionetworks.repo.model.table.TableEntity'][0]
     except IndexError:
         entDict['participantVersionsId'] = None
-
+        logger.warning(f'Study {studyId} project missing participant version table in Synapse.')
     try:
         entDict['parquetFolderId'] = [ent['id'] for ent in entities if ent['name']=='parquet' and
                                       ent['type']=='org.sagebionetworks.repo.model.Folder'][0]
     except IndexError:
         entDict['parquetFolderId'] = None
+        logger.warning(f'Study {studyId} project missing parquet folder in Synapse.')
 
     #Score File is in subfolder. Get the folder and get add file in folder
     entDict['scoreFolderId'] = [ent['id'] for ent in entities if ent['name']=='score' and
@@ -57,6 +59,7 @@ def studyEntityIds(syn, studyId):
         entDict['scoreFileId'] = list(syn.getChildren(entDict['scoreFolderId']))[0]['id']
     except IndexError:
         entDict['scoreFileId'] = None
+        logger.warning(f'Study {studyId} project missing score file in Synapse.')
 
     return entDict
 
@@ -112,7 +115,7 @@ def compute_scores(df_metadata, df_stepdata, df_task_data, study_df, filename):
         filename: filename info
         
     Return:
-        Comnined processed socre for each task
+        Combined processed score for each task
     """
     spelling_score = cs.get_score(df_task_data, df_stepdata, df_metadata, 'spelling', study_df) #Spelling
     vocab_score = cs.get_score(df_task_data, df_stepdata, df_metadata, 'vocabulary', study_df) #vocabulary
@@ -144,7 +147,7 @@ def upload_score(syn, file_path, git_path, des_synid):
         des_synid: destination synID
         
     Return:
-        Comnined processed score for each task
+        Combined processed score for each task
     """
     entity = File(file_path, parent = des_synid)
     syn.store(entity, executed = git_path)
@@ -152,7 +155,7 @@ def upload_score(syn, file_path, git_path, des_synid):
 
     
 def clean_score(file_path):
-    """Removing processed socre from local
+    """Remove processed score file from from local directory
     
     Args:
         file_path: file location
@@ -178,6 +181,12 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     syn = synapseclient.login(authToken = args.auth_token)
+    ## How to access authentication toward Synapse using env variables
+    #import json, os, synapseclient
+    # secrets=json.loads(os.getenv("SCHEDULED_JOB_SECRETS"))
+    # auth_token = secrets["PAT"]
+    # syn=synapseclient.Synapse()
+    # syn.login(authToken=auth_token)
 
     #Get information about studies in Synapse
     studies = getStudies(syn)
@@ -191,7 +200,7 @@ if __name__ == "__main__":
         study_df = get_studyreference(syn, study['participantVersionsId'])
 
         compute_scores(df_metadata, df_stepdata, df_task_data, study_df,  file_path)
-        #upload_score(syn, file_path, args.git, config['dest_id'][key])
-        #clean_score(file_path)#cleaning processed score
+        upload_score(syn, file_path, args.git, config['dest_id'][key])
+        clean_score(file_path)#cleaning processed score
     
         

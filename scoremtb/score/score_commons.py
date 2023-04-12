@@ -175,7 +175,7 @@ def filter_assesment(assmnt_val, config, task_filter, study_membership):
 
     ## Fix issue where scores are sometimes stored under scores_finalTheta_double and scores_finalSE_double and
     ## other times: scores_finalTheta, scores_finalSE
-    ## Likely related to: Glue Bug in BridgeDownstreahttps://sagebionetworks.jira.com/browse/ETL-238
+    ## Likely related to: Glue Bug in BridgeDownstream:  https://sagebionetworks.jira.com/browse/ETL-238
     score_cols = [col if col in task_filter.columns else col+'_double'  for col in score_cols]
     
     if assmnt_val == 'psm':
