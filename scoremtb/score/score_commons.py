@@ -152,34 +152,6 @@ def get_svp_score(task_data, dfid, assmnt_val, config, study_membership):
     score_df = merge_df[common_cols + config[assmnt_val + '_score']]
     return score_df
 
-def filter_scorecol(config, study_membership):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Temp fix to handle different score column name
-
-    Args: 
-        config: configuration file object
-        study_membership: study membership/participant info
-        
-    Return:
-        score columns
-    
-    -----------------------------------------------------------------------------------------
-    """
-    score_col = config['scores_final_cols']
-    
-    if len(study_membership)>0:
-        studyid = study_membership['studyMemberships'][0].split(':')[1]
-        studyid = studyid.replace('|', '')
-        
-        if studyid == 'htshxm':
-            score_col = config['scores_final_cols_ucsd']
-        
-        elif studyid == 'cxhnxd':
-            score_col = config['scores_final_cols_wustl']
-            
-    return score_col
 
 def filter_assesment(assmnt_val, config, task_filter, study_membership):
     """
@@ -199,14 +171,20 @@ def filter_assesment(assmnt_val, config, task_filter, study_membership):
     
     -----------------------------------------------------------------------------------------
     """
-    score_col = filter_scorecol(config, study_membership)
+    score_cols = config['scores_final_cols']
+
+    ## Fix issue where scores are sometimes stored under scores_finalTheta_double and scores_finalSE_double and
+    ## other times: scores_finalTheta, scores_finalSE
+    ## Likely related to: Glue Bug in BridgeDownstream:  https://sagebionetworks.jira.com/browse/ETL-238
+    score_cols = [col if col in task_filter.columns else col+'_double'  for col in score_cols]
     
     if assmnt_val == 'psm':
         task_filter = filter_psm(assmnt_val, config, task_filter)
     
     else:
-        task_filter[config[assmnt_val + '_score']] = task_filter[score_col]
+        task_filter[config[assmnt_val + '_score']] = task_filter[score_cols]
     return task_filter
+
 
 def filter_psm(assmnt_val, config, task_filter):
     """
