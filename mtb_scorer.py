@@ -110,7 +110,7 @@ def get_studyreference(syn, table_id):
 
 def upload_score(syn, file_path, git_path, des_synid):
     """ Upload final score to Syanpse
-    
+
     Args:
         syn: synapse object
         file_path: processed file path
@@ -134,6 +134,80 @@ def clean_score(file_path):
     """
     if os.path.exists(file_path):
         os.remove(file_path)
+
+def _load_dccs_interaction_data(syn, project_id, filters='dccs'):
+    """ Uses interaction events to impute DCCS reaction times
+
+    Args:
+        syn: Synapse object
+        project_id: parquet file synID
+        filters: list of filters passed to load Parquet function
+
+    return interactiondata data frame
+    """
+    df_interactions = gsyn.parquet_2_df(syn, project_id, 'dataset_sharedschema_v1_userInteractions/', filters)
+    df_controlEvents = gsyn.parquet_2_df(syn, project_id, 'dataset_sharedschema_v1_userInteractions_controlEvent/', filters)
+
+    interactionsData = (df_interactions
+                        .merge(df_controlEvents[['id', 'recordid', 'userInteractions.val.controlEvent.val']],
+                            left_on=['recordid', 'controlEvent'],
+                            right_on=['recordid', 'id'],
+                            suffixes=[None, '_controlEvent'],
+                            how='left')
+                        .drop('id_controlEvent', axis=1))  #Remove duplicated columns
+    return interactionsData
+
+
+def _computeDT(df):
+    """ Pull out the last 'uiEnabled' and the first 'touchDown' and compute the time difference
+
+       parameters df data frame for one id and stepidentifier sorted by index
+
+       returns same dataframe with additional ResponseTime_in_milSecond column
+    """
+
+    # Find last row where userInteractions is 'uiEnabled' for this stepIdentifier
+    idx_uiEnabled =   df[df["userInteractions.val.controlEvent.val"]=="uiEnabled"].index[-1]
+
+    # Return responseTime of 2000 if no touchDown recorded after uiEnabled
+    if 'touchDown' not in set(df.loc[idx_uiEnabled:,"userInteractions.val.controlEvent.val"]):
+        return  df.assign(ResponseTime_in_milSecond = float('nan'))
+
+    # Find the first row with 'touchDown', but after the last uiEnabled row
+    idx_touchDown = (df.loc[idx_uiEnabled:,:]
+                     .query('`userInteractions.val.controlEvent.val` == "touchDown"')
+                     .index[0])
+
+    dt = int(pd.to_datetime(df.loc[[idx_uiEnabled, idx_touchDown],'timestamp']) #select 2 rows
+                      .diff()                  #Compute difference in time 
+                      .dt.total_seconds()      #Convert to seconds
+                      .iloc[-1]*1000)          #select last row (of 2 rows, first row is NaN) and convert to ms
+
+    return  df.assign(ResponseTime_in_milSecond = dt)
+
+
+def impute_missing_dccs_timing(syn, project_id, df_stepdata, filters):
+    """Imputes response times from interaction data and merges this with stepdata
+
+    Args:
+        syn: Synapse object
+        project_id: parquet file synID
+        df_stepdata: original stepdata data frame
+        filters: list of filters passed to load Parquet function
+
+    return updated stepdata data framw with updated timing information
+    """
+    df = _load_dccs_interaction_data(syn, project_id, filters)
+
+    #Determine deltaT in ms for each id and stepIdentifier and remove duplicates
+    timing = df.groupby(['id', 'stepIdentifier']).apply(_computeDT)
+    timing = timing[['id', 'recordid', 'stepIdentifier', 'ResponseTime_in_milSecond']].drop_duplicates()
+
+    #Merge new itming information with df_stepdata
+    #TODO move the ResponseTime_in_milSecond  to responseTime if happy with results
+    return df_stepdata.merge(timing,
+                             left_on= ['recordid', 'identifier', 'id'],
+                             right_on=['recordid', 'stepIdentifier', 'id', ])
 
     
 if __name__ == "__main__":
@@ -161,7 +235,12 @@ if __name__ == "__main__":
             print(assessmentId)
             filter = [('assessmentid', '=', assessmentId)]
             df_metadata, df_stepdata, df_task_data = load_data(syn, study['parquetFolderId'], filter)
+            #Impute reaction time data for dcccs data for older studies
+            if assessmentId=='dccs':
+                df_steps = impute_missing_dccs_timing(syn, study['parquetFolderId'], df_stepdata, filter)
+
             scores.append(cs.get_score(df_task_data, df_stepdata, df_metadata, assessmentId, study_df))
+
         stack_merged = cs.combine_scores(scores, df_metadata).sort_values('startDate')
         stack_merged.to_csv(os.path.join(home_path, 'MTB_' + study['studyId'] + '_scores.csv'), index=False)
 
