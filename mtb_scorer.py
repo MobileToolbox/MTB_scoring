@@ -264,12 +264,12 @@ if __name__ == "__main__":
 
         scores = []
         #TODO temporarily removed all non dccs rows
-        for assessmentId in ['dccs']:#, 'spelling','vocabulary', 'psm','memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
+        for assessmentId in ['dccs', 'spelling','vocabulary', 'psm','memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
             print(assessmentId)
             filter = [('assessmentid', '=', assessmentId)]
             df_metadata, df_stepdata, df_task_data = load_data(syn, study['parquetFolderId'], filter)
             #Impute reaction time data for dcccs data for older studies
-            if assessmentId=='dccs':
+            if assessmentId in ['dccs', 'flanker']:
                 df_missing = impute_missing_timing(syn, study['parquetFolderId'], df_stepdata, filter, assessmentId)
                 #TODO move this to impute function if the results look good
                 df_stepdata['responseTime'] = df_missing['imputed_rt_ms']
