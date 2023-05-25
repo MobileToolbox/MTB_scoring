@@ -10,6 +10,7 @@ from synapseclient import File
 from scoremtb.score import compute_score as cs
 from scoremtb.score import get_syndata as gsyn
 from scoremtb.util import util as ut
+from scoremtb.compute_response_time import impute_missing_response_timing 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -54,7 +55,7 @@ def studyEntityIds(syn, studyId):
         logger.warning(f'Study {studyId} project missing parquet folder in Synapse.')
 
     #Score File is in subfolder. Get the folder and get add file in folder
-    entDict['scoreFolderId'] = [ent['id'] for ent in entities if ent['name']=='score' and
+    entDict['scoreFolderId'] = [ent['id'] for ent in entities if ent['name']=='scores' and
                                 ent['type']=='org.sagebionetworks.repo.model.Folder'][0]
     try:
         entDict['scoreFileId'] = list(syn.getChildren(entDict['scoreFolderId']))[0]['id']
@@ -136,111 +137,6 @@ def clean_score(file_path):
     if os.path.exists(file_path):
         os.remove(file_path)
 
-def _load_interaction_data(syn, project_id, filters='dccs'):
-    """ Loads interactions dataframe used to compute reaction times
-
-    Args:
-        syn: Synapse object
-        project_id: parquet file synID
-        filters: list of filters passed to load Parquet function
-
-    return interactiondata data frame
-    """
-    df_interactions = gsyn.parquet_2_df(syn, project_id, 'dataset_sharedschema_v1_userInteractions/', filters)
-    df_controlEvents = gsyn.parquet_2_df(syn, project_id, 'dataset_sharedschema_v1_userInteractions_controlEvent/', filters)
-
-    interactionsData = (df_interactions
-                        .merge(df_controlEvents[['id', 'recordid', 'userInteractions.val.controlEvent.val']],
-                            left_on=['recordid', 'controlEvent'],
-                            right_on=['recordid', 'id'],
-                            suffixes=[None, '_controlEvent'],
-                            how='left')
-                        .drop('id_controlEvent', axis=1))  #Remove duplicated columns
-    return interactionsData
-
-WRONG_TIME_MARK_FOR_IMPUTATION = -99999
-def _computeDT(df, items=None):
-    """Pull out the last 'uiEnabled' and the first 'touchDown' after this event then
-       compute the time difference between these to events (this is assume the input
-       data is for a specific user and stepidentifer).
-
-       Args:
-          df data frame of item level responses for one record and stepidentifier sorted by index
-
-       returns same dataframe with additional imputed_rt_ms column
-    """
-
-    if df.iloc[0].stepIdentifier not in set(items): #Skip inputing response time for non-scored items
-        return  df.assign(imputed_rt_ms = np.NaN)
-
-    # Find last row where userInteractions is 'uiEnabled' for this stepIdentifier
-    idx_uiEnabled =   df[df["userInteractions.val.controlEvent.val"]=="uiEnabled"].index[-1]
-
-    #If the touchDown occured before the uiEnabled event return WRONG_TIME_MARK_FOR_IMPUTATION to be replaced median time later in the processing
-    if 'touchDown' in set(df.loc[:idx_uiEnabled,"userInteractions.val.controlEvent.val"]):
-        return  df.assign(imputed_rt_ms = WRONG_TIME_MARK_FOR_IMPUTATION)
-
-    # Return timeout responseTime of 2000 if no touchDown recorded after uiEnabled
-    if 'touchDown' not in set(df.loc[idx_uiEnabled:,"userInteractions.val.controlEvent.val"]):
-        return  df.assign(imputed_rt_ms = 2000)
-
-    # Find the first row with 'touchDown', but after the last uiEnabled row
-    idx_touchDown = (df.loc[idx_uiEnabled:,:]
-                     .query('`userInteractions.val.controlEvent.val` == "touchDown"')
-                     .index[0])
-
-    dt = int(pd.to_datetime(df.loc[[idx_uiEnabled, idx_touchDown],'timestamp']) #select 2 rows of relevant events
-                      .diff()                  #Compute difference in time 
-                      .dt.total_seconds()      #Convert to seconds
-                      .iloc[-1]*1000)          #select last row (of 2 rows, first row is NaN) and convert to ms
-    return  df.assign(imputed_rt_ms = dt)
-
-
-def _replace_wrong_timing_with_median(rtSeries):
-    """Given a Series of response times replace values with a specific value with median.
-
-    Returns: Pandas series
-    """
-    idx = (rtSeries==WRONG_TIME_MARK_FOR_IMPUTATION)
-    rtSeries = rtSeries.copy()
-    rtSeries[idx] = rtSeries[~idx].median()
-    return rtSeries
-
-def impute_missing_response_timing(syn, project_id, df_stepdata, filters, assessmentId):
-    """Imputes response times from interaction data and merges this with stepdata
-
-    Args:
-        syn: Synapse object
-        project_id: parquet file synID
-        df_stepdata: original stepdata data frame
-        filters: list of filters passed to load Parquet function
-        assessmentId: used ot determine fields for scoring
-
-    return updated stepdata data framw with updated timing information
-    """
-    df = _load_interaction_data(syn, project_id, filters)
-
-    # Load the items Used for scoring 
-    config = ut.get_config()
-    score_items = config[assessmentId+'_item']
-
-    #Determine deltaT in ms for each id and stepIdentifier and remove duplicates
-    timing = df.groupby(['id', 'stepIdentifier']).apply(_computeDT, score_items).reset_index(drop=True)
-    timing = timing[['id', 'recordid', 'stepIdentifier', 'imputed_rt_ms']].drop_duplicates()
-
-    #For events that are in wrong order (timing was set to WRONG_TIME_MARK_FOR_IMPUTATION9) 
-    # replace with median for that administration (id)
-    timing['imputed_rt_ms'] = (timing
-                                .groupby('id')['imputed_rt_ms']
-                                .apply(_replace_wrong_timing_with_median)
-                                .values)
-
-    #Merge new itming information with df_stepdata
-    #TODO move the imputed_rt_ms  to responseTime if happy with results
-    return df_stepdata.merge(timing,
-                             left_on= ['recordid', 'identifier', 'id'],
-                             right_on=['recordid', 'stepIdentifier', 'id', ])
-
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process MTB score......")
@@ -259,20 +155,22 @@ if __name__ == "__main__":
          os.mkdir(home_path)
 
     for i, study in studies.iterrows():
+        if study['studyId'] != 'jfxqpk': #'mtbwrj':
+            continue
         logger.info(study['studyId']+' '+study['name'])
         study_df = get_studyreference(syn, study['participantVersionsId'])
-
         scores = []
-        #TODO temporarily removed all non dccs rows
         for assessmentId in ['dccs', 'spelling','vocabulary', 'psm','memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
-            print(assessmentId)
+            print(study['studyId'], assessmentId)
             filter = [('assessmentid', '=', assessmentId)]
             df_metadata, df_stepdata, df_task_data = load_data(syn, study['parquetFolderId'], filter)
-            #Impute reaction time data for dcccs data for older studies
+            #Impute reaction time data for dccs data for older studies
             if assessmentId in ['dccs', 'flanker']:
-                df_missing = impute_missing_timing(syn, study['parquetFolderId'], df_stepdata, filter, assessmentId)
+                df_stepdata.to_csv('20230510_imputed_rt/step_data_%s_%s_before.csv' %(study['studyId'], assessmentId)) #TODO remove
+                df_missing = impute_missing_response_timing(syn, study['parquetFolderId'], df_stepdata, filter, assessmentId)
                 #TODO move this to impute function if the results look good
                 df_stepdata['responseTime'] = df_missing['imputed_rt_ms']
+                df_stepdata.to_csv('20230510_imputed_rt/step_data_%s_%s_imputed.csv' %(study['studyId'], assessmentId)) #TODO remove
             scores.append(cs.get_score(df_task_data, df_stepdata, df_metadata, assessmentId, study_df))
 
         stack_merged = cs.combine_scores(scores, df_metadata).sort_values('startDate')
