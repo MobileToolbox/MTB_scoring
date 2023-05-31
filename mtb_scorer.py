@@ -155,8 +155,6 @@ if __name__ == "__main__":
          os.mkdir(home_path)
 
     for i, study in studies.iterrows():
-        if study['studyId'] != 'jfxqpk': #'mtbwrj':
-            continue
         logger.info(study['studyId']+' '+study['name'])
         study_df = get_studyreference(syn, study['participantVersionsId'])
         scores = []
@@ -166,11 +164,9 @@ if __name__ == "__main__":
             df_metadata, df_stepdata, df_task_data = load_data(syn, study['parquetFolderId'], filter)
             #Impute reaction time data for dccs data for older studies
             if assessmentId in ['dccs', 'flanker']:
-                df_stepdata.to_csv('20230510_imputed_rt/step_data_%s_%s_before.csv' %(study['studyId'], assessmentId)) #TODO remove
                 df_missing = impute_missing_response_timing(syn, study['parquetFolderId'], df_stepdata, filter, assessmentId)
                 #TODO move this to impute function if the results look good
                 df_stepdata['responseTime'] = df_missing['imputed_rt_ms']
-                df_stepdata.to_csv('20230510_imputed_rt/step_data_%s_%s_imputed.csv' %(study['studyId'], assessmentId)) #TODO remove
             scores.append(cs.get_score(df_task_data, df_stepdata, df_metadata, assessmentId, study_df))
 
         stack_merged = cs.combine_scores(scores, df_metadata).sort_values('startDate')
