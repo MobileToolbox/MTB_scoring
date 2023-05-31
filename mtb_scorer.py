@@ -155,10 +155,11 @@ if __name__ == "__main__":
          os.mkdir(home_path)
 
     for i, study in studies.iterrows():
-        if study['studyId'] != 'jfxqpk': #'mtbwrj':
+        if study['studyId'] != 'mtbwrj':  #TODO remove to work across all data 
             continue
         logger.info(study['studyId']+' '+study['name'])
         study_df = get_studyreference(syn, study['participantVersionsId'])
+        assessment_locations = gsyn.find_study_assessment_paths(syn, study['parquetId'])
         scores = []
         for assessmentId in ['dccs', 'spelling','vocabulary', 'psm','memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
             print(study['studyId'], assessmentId)
