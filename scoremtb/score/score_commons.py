@@ -4,7 +4,7 @@
 import pandas as pd
 from scoremtb.util import score_util as su
 
-def get_common_score(stepdata, task_data, df_metadata, assmnt_val, config):
+def get_common_score(stepdata, task_data, df_metadata, assessmentId, config):
     """Process score for common assesments 
         (like: DCCS, Flanker, MFS, Name Match etc.)
 
@@ -12,28 +12,28 @@ def get_common_score(stepdata, task_data, df_metadata, assmnt_val, config):
         stepdata: stepdata pandas dataframe downloaded from Synapse
         task_data: taskdata pandas dataframe downloaded from Synapse
         df_metadata: metadata pandas dataframe downloaded from Synapse
-        assmnt_val: assesment value 
+        assessmentId: assesment value 
         config: configuration file object
         
     Return:
         A pandas dataframe with MTB scores for a given common assesment
     """
-    step = su.get_identifierinfo(stepdata, assmnt_val)
+    step = su.get_identifierinfo(stepdata, assessmentId)
     
-    scoreitem = su.get_scoreitems(assmnt_val, config)
-    scoresum = su.process_score(step, assmnt_val, scoreitem, config)
+    scoreitem = su.get_scoreitems(assessmentId, config)
+    scoresum = su.process_score(step, assessmentId, scoreitem, config)
     
-    score_df = evaluate_common_score(scoresum, task_data, df_metadata, assmnt_val, config)
+    score_df = evaluate_common_score(scoresum, task_data, df_metadata, assessmentId, config)
     return score_df
     
-def evaluate_common_score(data, task_data, df_metadata, assmnt_val, config):
+def evaluate_common_score(data, task_data, df_metadata, assessmentId, config):
     """ Preparing scores for common assesments
 
     Args: 
         data: pandas dataframe with assesment specific processed score
         task_data: taskdata pandas dataframe downloaded from Synapse
         df_metadata: metadata pandas dataframe downloaded from Synapse
-        assmnt_val: assesment value (like: dccs, flanker etc.)
+        assessmentId: assesment value (like: dccs, flanker etc.)
         config: configuration file object
     
     Return:
@@ -42,27 +42,27 @@ def evaluate_common_score(data, task_data, df_metadata, assmnt_val, config):
     """
     common_cols = config['common_cols']
     
-    if assmnt_val=='fnameb':
-        score_df = get_fname_score(data, task_data, df_metadata, assmnt_val, config)
+    if assessmentId=='fnameb':
+        score_df = get_fname_score(data, task_data, df_metadata, assessmentId, config)
         return score_df
     
-    task_filter = task_data[task_data['assessmentid'] == assmnt_val]
+    task_filter = task_data[task_data['assessmentid'] == assessmentId]
     merge_df = data.merge(task_filter, left_on = 'id', right_on = 'steps')
     
-    filter_df = merge_df[['recordid'] + config[assmnt_val + '_score']]
+    filter_df = merge_df[['recordid'] + config[assessmentId + '_score']]
     merge_meta_df = filter_df.merge(df_metadata, on= 'recordid', how='left')
     
-    score_df = merge_meta_df[common_cols + config[assmnt_val + '_score']]
+    score_df = merge_meta_df[common_cols + config[assessmentId + '_score']]
     return score_df
 
-def get_fname_score(data, task_data, df_metadata, assmnt_val, config):
+def get_fname_score(data, task_data, df_metadata, assessmentId, config):
     """Prepares scores for fnameb assesments
 
     Args: 
         data: pandas dataframe with processed score for Fnameb assesment
         task_data: taskdata pandas dataframe downloaded from Synapse
         df_metadata: taskdata pandas dataframe downloaded from Synapse
-        assmnt_val: assesment value (fnameb)
+        assessmentId: assesment value (fnameb)
         config: configuration file object
     
     Return:
@@ -72,7 +72,7 @@ def get_fname_score(data, task_data, df_metadata, assmnt_val, config):
     common_cols = config['common_cols']
     lookup_df = get_lookup(config)
     
-    task_filter = task_data[task_data['assessmentid'] == assmnt_val]
+    task_filter = task_data[task_data['assessmentid'] == assessmentId]
     merge_df = data.merge(task_filter, left_on = 'id', right_on = 'steps')
     
     filter_df = merge_df[['recordid'] + [config['fnameb_sum']]]
@@ -103,14 +103,14 @@ def get_lookup(config):
     lookup_df['sd'] = sd
     return lookup_df
 
-def get_svp_score(task_data, df_metadata, assmnt_val, config, study_membership):
+def get_svp_score(task_data, df_metadata, assessmentId, config, study_membership):
     """This is the function to process score for common assesments 
         (like [SVP]: Spell, Vocab and PSM)
 
     Args: 
         task_data: taskdata pandas dataframe downloaded from Synapse
         df_metadata: metadata pandas dataframe downloaded from Synapse
-        assmnt_val: assesment value (like: spelling, vocabulary  etc.)
+        assessmentId: assesment value (like: spelling, vocabulary  etc.)
         config: configuration file object
         study_membership: study membership/participant info
     
@@ -120,22 +120,23 @@ def get_svp_score(task_data, df_metadata, assmnt_val, config, study_membership):
     common_cols = config['common_cols'] #Columns to use out of the taskdata dataframe
     
     #Filter down the taskdata to specific assessment
-    task_filter = task_data[task_data['assessmentid'] == assmnt_val].reset_index()
+    task_filter = task_data[task_data['assessmentid'] == assessmentId].reset_index()
+    print('(task_filter.shape', task_filter.shape)
     #Rename score columns
-    task_filter = filter_assesment(assmnt_val, config, task_filter)
-    
-    task_filter = task_filter[['recordid', 'steps'] + config[assmnt_val + '_score']]
+    task_filter = filter_assesment(assessmentId, config, task_filter)
+    print('(task_filter.shape', task_filter.shape)
+    task_filter = task_filter[['recordid', 'steps'] + config[assessmentId + '_score']]
     merge_df = task_filter.merge(df_metadata, on = 'recordid', how = 'left')
-    score_df = merge_df[common_cols + config[assmnt_val + '_score']]
+    score_df = merge_df[common_cols + config[assessmentId + '_score']]
     return score_df
 
 #TODO move this up to get_svp_score
-def filter_assesment(assmnt_val, config, task_filter):
+def filter_assesment(assessmentId, config, task_filter):
     """This is the function to process score for common assesments 
         (like [SVP]: Spell, Vocab and PSM)
 
     Args: 
-        assmnt_val: assesment value (like: spelling, vocabulary and PSM)
+        assessmentId: assesment value (like: spelling, vocabulary and PSM)
         config: configuration file object
         task_filter: assesment wise filtered taskdata pandas dataframe
         
@@ -149,32 +150,32 @@ def filter_assesment(assmnt_val, config, task_filter):
     ## Likely related to: Glue Bug in BridgeDownstream:  https://sagebionetworks.jira.com/browse/ETL-238
     score_cols = [col if col in task_filter.columns else col+'_double'  for col in score_cols]
     
-    if assmnt_val == 'psm':
-        task_filter = filter_psm(assmnt_val, config, task_filter)
-    elif assmnt_val in ['letternumberseries', 'verbalreasoning']:  #TODO remove specific use case.
-        task_filter[config[assmnt_val + '_score']] = task_filter[['scores_rawScore']]
+    if assessmentId == 'psm':
+        task_filter = filter_psm(assessmentId, config, task_filter)
+    elif assessmentId in ['LetterNumberSeriesV1', 'VerbalReasoningV1']:  #TODO remove specific use case.
+        task_filter[config[assessmentId + '_score']] = task_filter[['scores_rawScore']]
     else:
         #TODO why are we renaming the score columns.  If we remove this we can simplify the processing code signifantly 
         # and remove a bunch of values out of the config file.
-        task_filter[config[assmnt_val + '_score']] = task_filter[score_cols]
+        task_filter[config[assessmentId + '_score']] = task_filter[score_cols]
     return task_filter
 
 
-def filter_psm(assmnt_val, config, task_filter):
+def filter_psm(assessmentId, config, task_filter):
     """This is the function to process score for PSM assesment
 
     Args: 
-        assmnt_val: assesment value (PSM)
+        assessmentId: assesment value (PSM)
         config: configuration file object
         task_filter: PSM assesment filtered taskdata pandas dataframe
         
     Return:
         A pandas dataframe with processed MTB score for PSM assesment
     """
-    psm_filter = task_filter.loc[((~task_filter[config[assmnt_val + '_adjacentp'][0]].isna()) &
-                                 (~task_filter[config[assmnt_val + '_adjacentp'][1]].isna()))]
+    psm_filter = task_filter.loc[((~task_filter[config[assessmentId + '_adjacentp'][0]].isna()) &
+                                 (~task_filter[config[assessmentId + '_adjacentp'][1]].isna()))]
         
-    psm_filter[config[assmnt_val + '_score'][0]] = psm_filter.loc[:, config[assmnt_val + '_adjacentp']].sum(axis=1)
-    psm_filter[config[assmnt_val + '_score'][1]] = psm_filter.loc[:, config[assmnt_val + '_exactm']].sum(axis=1)
+    psm_filter[config[assessmentId + '_score'][0]] = psm_filter.loc[:, config[assessmentId + '_adjacentp']].sum(axis=1)
+    psm_filter[config[assessmentId + '_score'][1]] = psm_filter.loc[:, config[assessmentId + '_exactm']].sum(axis=1)
     return psm_filter
 

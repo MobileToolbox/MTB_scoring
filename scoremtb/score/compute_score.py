@@ -9,7 +9,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger=logging.getLogger()
 
-def get_score(task_data, stepdata, df_metadata, assmnt_val, study_membership):
+def get_score(task_data, stepdata, df_metadata, assessmentId, study_membership):
     """
     -----------------------------------------------------------------------------------------
     
@@ -19,7 +19,7 @@ def get_score(task_data, stepdata, df_metadata, assmnt_val, study_membership):
         task_data: taskdata pandas dataframe downloaded from Synapse
         stepdata: stepdata pandas dataframe downloaded from Synapse
         df_metadata: metadata pandas dataframe downloaded from Synapse
-        assmnt_val: Assesment value
+        assessmentId: Assesment value
         study_membership: study membership info
         
     Return:
@@ -28,18 +28,18 @@ def get_score(task_data, stepdata, df_metadata, assmnt_val, study_membership):
     -----------------------------------------------------------------------------------------
     """
     config = ut.get_config()
-    assmnt_val = assmnt_val.lower()
-    
-    if assmnt_val in ['psm', 'vocabulary', 'spelling','3drotation', 'letternumberseries', 'verbalreasoning', 'progressivematrices']:
-        score_df = sc.get_svp_score(task_data, df_metadata, assmnt_val, config, study_membership) #TODO rename to indicate that it fetch score
-    elif assmnt_val in ['dccs', 'memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
-        score_df = sc.get_common_score(stepdata, task_data, df_metadata, assmnt_val, config)   #TODO rename to compute score
+    if assessmentId in ['psm', 'vocabulary', 'spelling','3DRotationV1', 'LetterNumberSeriesV1', 'VerbalReasoningV1', 'ProgressiveMatricesV1']:
+        print(task_data.shape)
+        score_df = sc.get_svp_score(task_data, df_metadata, assessmentId, config, study_membership) #TODO rename to indicate that it fetch score
+        print('score_df.shape:', score_df.shape)
+    elif assessmentId in ['dccs', 'memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
+        score_df = sc.get_common_score(stepdata, task_data, df_metadata, assessmentId, config)   #TODO rename to compute score
     else:
-        logger.error(f'We have a unkown assessment that we can\'t score: {assmnt_val}')
+        logger.error(f'We have a unkown assessment that we can\'t score: {assessmentId}')
         
     score_df = pd.merge(score_df, study_membership, how='inner', on = 'healthcode')
-    score_df['score_dict'] = score_df[config[assmnt_val + '_score']].to_dict(orient='records')
-    score_df = score_df.drop(columns=config[assmnt_val + '_score'])
+    score_df['score_dict'] = score_df[config[assessmentId + '_score']].to_dict(orient='records')
+    score_df = score_df.drop(columns=config[assessmentId + '_score'])
     
     stacked_score = ut.stack_score(score_df)
     return stacked_score
