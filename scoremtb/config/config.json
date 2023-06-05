@@ -11,13 +11,17 @@
     "vocabulary_score": ["vocab_theta", "vocab_se"],
     "spelling_score": ["spell_theta", "spell_se"],
     "psm_score": ["psm.adj.sum", "psm.exact.sum"],
+    "3drotation_score": ["3drotation_theta", "3drotation_se"],
+    "letternumberseries_score": ["letternumberseries_raw"],  
+    "verbalreasoning_score": ["verbalreasoning_raw"],
+    "progressivematrices_score": ["progressivematrices_theta", "progressivematrices_se"],
 
     "psm_adjacentp": ["scores_adjacentPairs1", "scores_adjacentPairs2"],
     "psm_exactm": ["scores_exactMatch1", "scores_exactMatch2"],
 
     "scores_final_cols": ["scores_finalTheta", "scores_finalSE"],
     
-    "common_cols": ["healthcode", "recordid", "assessmentid", "deviceInfo", "startDate", "endDate", "participantversion", "clientinfo", "sessionguid", "taskStatus_val", "sessionstarteventid"],
+    "common_cols": ["healthcode", "recordid", "assessmentid", "deviceInfo", "startDate", "endDate", "participantversion", "clientinfo", "sessionguid", "taskStatus", "sessionstarteventid"],
     
     "memory-for-sequences_item": ["MFS_2_1", "MFS_2_2", "MFS_2_3", "MFS_3_1", "MFS_3_2", "MFS_3_3", "MFS_3_4", "MFS_3_5", "MFS_3_6", "MFS_4_1", "MFS_4_2", "MFS_4_3", "MFS_5_1", "MFS_5_2", "MFS_5_3", "MFS_6_1", "MFS_6_2", "MFS_6_3", "MFS_7_1", "MFS_7_2", "MFS_7_3", "MFS_8_1", "MFS_8_2", "MFS_8_3", "MFS_9_1", "MFS_9_2", "MFS_9_3", "MFS_10_1", "MFS_10_2", "MFS_10_3"],
     

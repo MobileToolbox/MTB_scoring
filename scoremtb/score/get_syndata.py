@@ -34,7 +34,7 @@ def get_s3_fs(entity_id, syn):
     return s3, bucket_path
 
 
-def find_study_assessment_paths(syn, entity_id):
+def get_paths_per_assessment(syn, entity_id):
     """Peaks into Parquet folder to determine what assessments and format of Parquet data
     
     Args:
@@ -50,10 +50,18 @@ def find_study_assessment_paths(syn, entity_id):
     dataset_list = s3.get_file_info(fs.FileSelector(bucket_path, recursive=False))
     pathnames = [folder.path for folder in dataset_list]
     foldernames = [path.split('/')[-1] for path in pathnames]
-    foldernames.remove('dataset_archivemetadata_v1')
+    
+    try:
+        foldernames.remove('dataset_archivemetadata_v1')
+        foldernames.remove('dataset_archivemetadata_v1_files')
+    except ValueError:
+        logger.info(f'Parquet folder {entity_id} does not contain dataset_archivemetadata_v1 ignoring folder with:')
+        logger.info(foldernames)
+        return None
     #Determine if "dataset_sharedschema_v1" is in the list of files which means it is old schema
     paths = {}
     if 'dataset_sharedschema_v1' in foldernames:
+        foldernames = [name for name in foldernames if 'dataset_sharedschema_v1' not in name]  #Remove all sharedschema references
         # Query the subfolder and find the different assessments.
         assessment_list = s3.get_file_info(fs.FileSelector(bucket_path+'dataset_sharedschema_v1', recursive=False))
         assessment_list = [path.path.split('/')[-1].split('=')[1] for path in assessment_list]
@@ -70,12 +78,13 @@ def find_study_assessment_paths(syn, entity_id):
     assessmentSearches = [match.group(1) for match in assessmentSearches if match]
     for assessmentId in set(assessmentSearches):
         paths[assessmentId]={'meta_path': 'dataset_archivemetadata_v1',
-                            'step_path': f'df_dataset_{assessmentId}_v1_steps',
+                            'step_path': f'dataset_{assessmentId}_v1_steps',
                             'task_path': f'dataset_{assessmentId}_v1',
                             'task_status_path': None}
         #Remove filenames that have been assigned to specific assessments and types
         foldernames = [name for name in foldernames if assessmentId not in name]
-    print(foldernames)
+    logger.info(f'Unhandled datasets in the Parquet folder: {foldernames}')
+    paths.pop('fnamea', None) #Remove fanamea from assessments from scoring
     return paths
 
 def parquet_2_df(syn, entity_id, dataset, filters=None):

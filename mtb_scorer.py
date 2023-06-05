@@ -66,7 +66,7 @@ def studyEntityIds(syn, studyId):
     return entDict
 
 
-def load_data(syn, project_id, filters=None):
+def load_data(syn, project_id, paths, filters=None):
     """ Loading parquet data into pandas dataframe
     
     Args:
@@ -77,14 +77,17 @@ def load_data(syn, project_id, filters=None):
     Return:
         data frames df_metadata, df_stepdata, df_task_data
     """
-    df_metadata = gsyn.parquet_2_df(syn, project_id, 'dataset_archivemetadata_v1/', filters)
-    df_stepdata = gsyn.parquet_2_df(syn, project_id, 'dataset_sharedschema_v1_steps/', filters)
-    df_task_data = gsyn.parquet_2_df(syn, project_id, 'dataset_sharedschema_v1/', filters)
-    df_task_status = gsyn.parquet_2_df(syn, project_id, 'dataset_sharedschema_v1_taskStatus/', filters)
-    
-    #Merge task status
-    df_task_status = df_task_status.drop(columns=['id', 'index'])
-    df_metadata = df_metadata.merge(df_task_status, on = ['recordid', 'assessmentid', 'year', 'month', 'day'], how='left').reset_index(drop=True)
+    df_metadata = gsyn.parquet_2_df(syn, project_id, paths['meta_path'], filters)
+    df_stepdata = gsyn.parquet_2_df(syn, project_id, paths['step_path'], filters)
+    df_task_data = gsyn.parquet_2_df(syn, project_id, paths['task_path'], filters)
+    if paths['task_status_path'] is not None:  #Merge taskStatus_val into metadata 
+        df_task_status = gsyn.parquet_2_df(syn, project_id, paths['task_status_path'], filters)
+        df_task_status = df_task_status.drop(columns=['id', 'index'])
+        df_metadata = df_metadata.merge(df_task_status, on = ['recordid', 'assessmentid', 'year', 'month', 'day'], how='left').reset_index(drop=True)
+        df_metadata = df_metadata.rename(columns={'taskStatus_val': 'taskStatus'})  
+    else: #Add taskStatus from the task_data to meta_data
+        df_metadata = df_metadata.merge(df_task_data[['recordid', 'assessmentid', 'year', 'month', 'day', 'taskStatus']],
+                                         on = ['recordid', 'assessmentid', 'year', 'month', 'day'], how='left').reset_index(drop=True)
     return df_metadata, df_stepdata, df_task_data
 
 def get_studyreference(syn, table_id):
@@ -155,25 +158,24 @@ if __name__ == "__main__":
          os.mkdir(home_path)
 
     for i, study in studies.iterrows():
-        if study['studyId'] != 'mtbwrj':  #TODO remove to work across all data 
+        if study['studyId'] !=  'mtbwrj':  #'htshxm': #TODO remove to work across all data 
             continue
         logger.info(study['studyId']+' '+study['name'])
         study_df = get_studyreference(syn, study['participantVersionsId'])
-        assessment_locations = gsyn.find_study_assessment_paths(syn, study['parquetId'])
+        assessment_locations = gsyn.get_paths_per_assessment(syn, study['parquetFolderId'])
+        if assessment_locations is None:  #There are no parquet files that I know hot to deal with
+            continue
+
         scores = []
-        for assessmentId in ['dccs', 'spelling','vocabulary', 'psm','memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
-            print(study['studyId'], assessmentId)
+        for assessmentId, paths in assessment_locations.items():
+            logger.info(study['studyId']+' ==> ' + assessmentId)
             filter = [('assessmentid', '=', assessmentId)]
-            df_metadata, df_stepdata, df_task_data = load_data(syn, study['parquetFolderId'], filter)
+            df_metadata, df_stepdata, df_task_data = load_data(syn, study['parquetFolderId'], paths, filter)
             #Impute reaction time data for dccs data for older studies
             if assessmentId in ['dccs', 'flanker']:
-                df_stepdata.to_csv('20230510_imputed_rt/step_data_%s_%s_before.csv' %(study['studyId'], assessmentId)) #TODO remove
                 df_missing = impute_missing_response_timing(syn, study['parquetFolderId'], df_stepdata, filter, assessmentId)
-                #TODO move this to impute function if the results look good
-                df_stepdata['responseTime'] = df_missing['imputed_rt_ms']
-                df_stepdata.to_csv('20230510_imputed_rt/step_data_%s_%s_imputed.csv' %(study['studyId'], assessmentId)) #TODO remove
+                df_stepdata['responseTime'] = df_missing['imputed_rt_ms'] #TODO move this to impute function if the results look good
             scores.append(cs.get_score(df_task_data, df_stepdata, df_metadata, assessmentId, study_df))
-
         stack_merged = cs.combine_scores(scores, df_metadata).sort_values('startDate')
         stack_merged.to_csv(os.path.join(home_path, 'MTB_' + study['studyId'] + '_scores.csv'), index=False)
 
