@@ -4,8 +4,12 @@
 import pandas as pd
 from scoremtb.util import util as ut
 from scoremtb.score import score_commons as sc
+import logging
 
-def get_score(task_data, stepdata, dfid, assmnt_val, study_membership):
+logging.basicConfig(level=logging.INFO)
+logger=logging.getLogger()
+
+def get_score(task_data, stepdata, df_metadata, assmnt_val, study_membership):
     """
     -----------------------------------------------------------------------------------------
     
@@ -14,7 +18,7 @@ def get_score(task_data, stepdata, dfid, assmnt_val, study_membership):
     Args:
         task_data: taskdata pandas dataframe downloaded from Synapse
         stepdata: stepdata pandas dataframe downloaded from Synapse
-        dfid: metadata pandas dataframe downloaded from Synapse
+        df_metadata: metadata pandas dataframe downloaded from Synapse
         assmnt_val: Assesment value
         study_membership: study membership info
         
@@ -26,11 +30,12 @@ def get_score(task_data, stepdata, dfid, assmnt_val, study_membership):
     config = ut.get_config()
     assmnt_val = assmnt_val.lower()
     
-    if assmnt_val == 'psm' or assmnt_val == 'vocabulary' or assmnt_val == 'spelling':
-        score_df = sc.get_svp_score(task_data, dfid, assmnt_val, config, study_membership)
-    
+    if assmnt_val in ['psm', 'vocabulary', 'spelling','3drotation', 'letternumberseries', 'verbalreasoning', 'progressivematrices']:
+        score_df = sc.get_svp_score(task_data, df_metadata, assmnt_val, config, study_membership) #TODO rename to indicate that it fetch score
+    elif assmnt_val in ['dccs', 'memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
+        score_df = sc.get_common_score(stepdata, task_data, df_metadata, assmnt_val, config)   #TODO rename to compute score
     else:
-        score_df = sc.get_common_score(stepdata, task_data, dfid, assmnt_val, config)
+        logger.error(f'We have a unkown assessment that we can\'t score: {assmnt_val}')
         
     score_df = pd.merge(score_df, study_membership, how='inner', on = 'healthcode')
     score_df['score_dict'] = score_df[config[assmnt_val + '_score']].to_dict(orient='records')
@@ -39,7 +44,7 @@ def get_score(task_data, stepdata, dfid, assmnt_val, study_membership):
     stacked_score = ut.stack_score(score_df)
     return stacked_score
 
-def combine_scores(score_list, dfid):
+def combine_scores(score_list, df_metadata):
     """
     -----------------------------------------------------------------------------------------
 
@@ -47,7 +52,7 @@ def combine_scores(score_list, dfid):
 
     Args: 
         score_list: list of score for each assesment
-        dfid: metadata pandas dataframe downloaded from Synapse
+        df_metadata: metadata pandas dataframe downloaded from Synapse
 
     Returns:
        scores_merged: A concatenated stacked pandas df with MTB score
@@ -55,7 +60,7 @@ def combine_scores(score_list, dfid):
     -----------------------------------------------------------------------------------------
     """
 
-    groups = dfid[['dataGroups','healthcode', 'recordid']]
+    groups = df_metadata[['dataGroups','healthcode', 'recordid']]
     groups = groups.drop_duplicates()
     
     df_combine = pd.concat(score_list).reset_index(drop=True)
