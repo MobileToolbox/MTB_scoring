@@ -163,6 +163,15 @@ if __name__ == "__main__":
         logger.info(study['studyId']+' '+study['name'])
         study_df = get_studyreference(syn, study['participantVersionsId'])
         assessment_locations = gsyn.get_paths_per_assessment(syn, study['parquetFolderId'])
+        assessment_locations['3DRotationV1'] = assessment_locations['3drotation']
+        del assessment_locations['3drotation']
+        assessment_locations['LetterNumberSeriesV1'] = assessment_locations['letternumberseries']
+        del assessment_locations['letternumberseries']
+        assessment_locations['ProgressiveMatricesV1'] = assessment_locations['progressivematrices']
+        del assessment_locations['progressivematrices']
+        assessment_locations['VerbalReasoningV1'] = assessment_locations['verbalreasoning']
+        del assessment_locations['verbalreasoning']
+
         if assessment_locations is None:  #There are no parquet files that I know hot to deal with
             continue
 
@@ -177,7 +186,8 @@ if __name__ == "__main__":
                 df_stepdata['responseTime'] = df_missing['imputed_rt_ms'] #TODO move this to impute function if the results look good
             scores.append(cs.get_score(df_task_data, df_stepdata, df_metadata, assessmentId, study_df))
         stack_merged = cs.combine_scores(scores, df_metadata).sort_values('startDate')
-        stack_merged.to_csv(os.path.join(home_path, 'MTB_' + study['studyId'] + '_scores.csv'), index=False)
+        file_path = os.path.join(home_path, 'MTB_' + study['studyId'] + '_scores.csv')
+        stack_merged.to_csv(file_path, index=False)
 
-        #upload_score(syn, file_path, args.git, config['dest_id'][key])
+        #upload_score(syn, file_path, args.git, study['scoreFolderId'])
         #clean_score(file_path)#cleaning processed score
