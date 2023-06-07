@@ -66,7 +66,7 @@ def studyEntityIds(syn, studyId):
     return entDict
 
 
-def load_data(syn, project_id, paths, filters=None):
+def load_data(syn, df_metadata, project_id, paths, filters=None):
     """ Loading parquet data into pandas dataframe
     
     Args:
@@ -77,14 +77,14 @@ def load_data(syn, project_id, paths, filters=None):
     Return:
         data frames df_metadata, df_stepdata, df_task_data
     """
-    df_metadata = gsyn.parquet_2_df(syn, project_id, paths['meta_path'], filters)
     df_stepdata = gsyn.parquet_2_df(syn, project_id, paths['step_path'], filters)
     df_task_data = gsyn.parquet_2_df(syn, project_id, paths['task_path'], filters)
     if paths['task_status_path'] is not None:  #Merge taskStatus_val into metadata 
-        df_task_status = gsyn.parquet_2_df(syn, project_id, paths['task_status_path'], filters)
-        df_task_status = df_task_status.drop(columns=['id', 'index'])
-        df_metadata = df_metadata.merge(df_task_status, on = ['recordid', 'assessmentid', 'year', 'month', 'day'], how='left').reset_index(drop=True)
-        df_metadata = df_metadata.rename(columns={'taskStatus_val': 'taskStatus'})  
+        df_task_status = (gsyn.parquet_2_df(syn, project_id, paths['task_status_path'], filters)
+                          .drop(columns=['id', 'index'])
+                          .rename(columns={'taskStatus_val': 'taskStatus'}))
+        df_metadata = df_metadata.merge(df_task_status, 
+                                        on = ['recordid', 'assessmentid', 'year', 'month', 'day'], how='left')
     else: #Add taskStatus from the task_data to meta_data
         df_metadata = df_metadata.merge(df_task_data[['recordid', 'assessmentid', 'year', 'month', 'day', 'taskStatus']],
                                          on = ['recordid', 'assessmentid', 'year', 'month', 'day'], how='left').reset_index(drop=True)
@@ -148,6 +148,7 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     syn = synapseclient.login(authToken = args.auth_token)
+    config = ut.get_config()
 
     # Get information about studies in Synapse
     studies = getStudies(syn)
@@ -158,33 +159,32 @@ if __name__ == "__main__":
          os.mkdir(home_path)
 
     for i, study in studies.iterrows():
-        if study['studyId'] !=  'mtbwrj':  #'htshxm': #TODO remove to work across all data 
-            continue
-        logger.info(study['studyId']+' '+study['name'])
-        study_df = get_studyreference(syn, study['participantVersionsId'])
-        assessment_locations = gsyn.get_paths_per_assessment(syn, study['parquetFolderId'])
-        assessment_locations['3DRotationV1'] = assessment_locations['3drotation']
-        del assessment_locations['3drotation']
-        assessment_locations['LetterNumberSeriesV1'] = assessment_locations['letternumberseries']
-        del assessment_locations['letternumberseries']
-        assessment_locations['ProgressiveMatricesV1'] = assessment_locations['progressivematrices']
-        del assessment_locations['progressivematrices']
-        assessment_locations['VerbalReasoningV1'] = assessment_locations['verbalreasoning']
-        del assessment_locations['verbalreasoning']
-
-        if assessment_locations is None:  #There are no parquet files that I know hot to deal with
+        if study['studyId'] in ['mtbwrj', 'ccbcwq','cxhnxd','jfxqpk', 'pmbfzc', 'hktrrx', 'fmqcjv', 'htshxm']:
             continue
 
+        logger.info(study['studyId']+'('+study['id']+') '+study['name'])
+        try:  #Skip studies that don't have the required data (e.g. new studies that don't have data yet)
+            study_df = get_studyreference(syn, study['participantVersionsId'])
+            df_allmetadata = gsyn.parquet_2_df(syn, study['parquetFolderId'], 'dataset_archivemetadata_v1').drop_duplicates()
+        except (FileNotFoundError, TypeError) as error:
+            logger.warning(f"Skipping {study['name']} - {study['studyId']} ({study['id']}) it doesn\'t have required data elements: {error}")
+            continue
+        assessments = [assessment for assessment in  set(df_allmetadata.assessmentid) if assessment!='fnamea']
         scores = []
-        for assessmentId, paths in assessment_locations.items():
-            logger.info(study['studyId']+' ==> ' + assessmentId)
+        metadata =[]
+        for assessmentId in assessments:
+            logger.info(study['studyId']+' ('+study['id']+')  ==> ' + assessmentId)
             filter = [('assessmentid', '=', assessmentId)]
-            df_metadata, df_stepdata, df_task_data = load_data(syn, study['parquetFolderId'], paths, filter)
+            dataset_paths = config['dataset_paths'][assessmentId]
+            df_meta, df_stepdata, df_task_data = load_data(syn, df_allmetadata.query("assessmentid==@assessmentId"), 
+                                                           study['parquetFolderId'], dataset_paths, filter)
+            metadata.append(df_meta)
             #Impute reaction time data for dccs data for older studies
             if assessmentId in ['dccs', 'flanker']:
                 df_missing = impute_missing_response_timing(syn, study['parquetFolderId'], df_stepdata, filter, assessmentId)
                 df_stepdata['responseTime'] = df_missing['imputed_rt_ms'] #TODO move this to impute function if the results look good
-            scores.append(cs.get_score(df_task_data, df_stepdata, df_metadata, assessmentId, study_df))
+            scores.append(cs.get_score(df_task_data, df_stepdata, df_meta, assessmentId, study_df))
+        df_metadata = pd.concat(metadata)
         stack_merged = cs.combine_scores(scores, df_metadata).sort_values('startDate')
         file_path = os.path.join(home_path, 'MTB_' + study['studyId'] + '_scores.csv')
         stack_merged.to_csv(file_path, index=False)

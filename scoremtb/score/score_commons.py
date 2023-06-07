@@ -121,10 +121,8 @@ def get_svp_score(task_data, df_metadata, assessmentId, config, study_membership
     
     #Filter down the taskdata to specific assessment
     task_filter = task_data[task_data['assessmentid'] == assessmentId].reset_index()
-    print('(task_filter.shape', task_filter.shape)
-    #Rename score columns
+    #Rename score columns TODO evaluate if this is necessary and remove if not.
     task_filter = filter_assesment(assessmentId, config, task_filter)
-    print('(task_filter.shape', task_filter.shape)
     task_filter = task_filter[['recordid', 'steps'] + config[assessmentId + '_score']]
     merge_df = task_filter.merge(df_metadata, on = 'recordid', how = 'left')
     score_df = merge_df[common_cols + config[assessmentId + '_score']]
