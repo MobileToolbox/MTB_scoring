@@ -78,7 +78,7 @@ def load_data(syn, df_metadata, project_id, paths, filters=None):
         data frames df_metadata, df_stepdata, df_task_data
     """
     df_stepdata = gsyn.parquet_2_df(syn, project_id, paths['step_path'], filters)
-    df_task_data = gsyn.parquet_2_df(syn, project_id, paths['task_path'], filters)
+    df_task_data = gsyn.parquet_2_df(syn, project_id, paths['task_path'], filters).drop_duplicates()
     if paths['task_status_path'] is not None:  #Merge taskStatus_val into metadata 
         df_task_status = (gsyn.parquet_2_df(syn, project_id, paths['task_status_path'], filters)
                           .drop(columns=['id', 'index'])
@@ -159,9 +159,6 @@ if __name__ == "__main__":
          os.mkdir(home_path)
 
     for i, study in studies.iterrows():
-        if study['studyId'] in ['mtbwrj', 'ccbcwq','cxhnxd','jfxqpk', 'pmbfzc', 'hktrrx', 'fmqcjv', 'htshxm']:
-            continue
-
         logger.info(study['studyId']+'('+study['id']+') '+study['name'])
         try:  #Skip studies that don't have the required data (e.g. new studies that don't have data yet)
             study_df = get_studyreference(syn, study['participantVersionsId'])
@@ -178,16 +175,17 @@ if __name__ == "__main__":
             dataset_paths = config['dataset_paths'][assessmentId]
             df_meta, df_stepdata, df_task_data = load_data(syn, df_allmetadata.query("assessmentid==@assessmentId"), 
                                                            study['parquetFolderId'], dataset_paths, filter)
-            metadata.append(df_meta)
             #Impute reaction time data for dccs data for older studies
             if assessmentId in ['dccs', 'flanker']:
                 df_missing = impute_missing_response_timing(syn, study['parquetFolderId'], df_stepdata, filter, assessmentId)
                 df_stepdata['responseTime'] = df_missing['imputed_rt_ms'] #TODO move this to impute function if the results look good
             scores.append(cs.get_score(df_task_data, df_stepdata, df_meta, assessmentId, study_df))
+            metadata.append(df_meta)
         df_metadata = pd.concat(metadata)
         stack_merged = cs.combine_scores(scores, df_metadata).sort_values('startDate')
+
+        #Output the scores
         file_path = os.path.join(home_path, 'MTB_' + study['studyId'] + '_scores.csv')
         stack_merged.to_csv(file_path, index=False)
-
         #upload_score(syn, file_path, args.git, study['scoreFolderId'])
         #clean_score(file_path)#cleaning processed score

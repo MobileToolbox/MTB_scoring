@@ -4,9 +4,10 @@
 import pandas as pd
 from scoremtb.util import score_util as su
 
-def get_common_score(stepdata, task_data, df_metadata, assessmentId, config):
-    """Process score for common assesments 
-        (like: DCCS, Flanker, MFS, Name Match etc.)
+def compute_scores_from_stepdata(stepdata, task_data, df_metadata, assessmentId, config):
+    """Process score for common assesments (e.g. DCCS, Flanker, MFS, Name Match) by extracting 
+    step level score information and combining into a common score.
+
 
     Args: 
         stepdata: stepdata pandas dataframe downloaded from Synapse
@@ -103,9 +104,8 @@ def get_lookup(config):
     lookup_df['sd'] = sd
     return lookup_df
 
-def get_svp_score(task_data, df_metadata, assessmentId, config, study_membership):
-    """This is the function to process score for common assesments 
-        (like [SVP]: Spell, Vocab and PSM)
+def get_computed_score(task_data, df_metadata, assessmentId, config, study_membership):
+    """Extrac pre-computed scores from the taskdata dataset
 
     Args: 
         task_data: taskdata pandas dataframe downloaded from Synapse

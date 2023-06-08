@@ -29,11 +29,9 @@ def get_score(task_data, stepdata, df_metadata, assessmentId, study_membership):
     """
     config = ut.get_config()
     if assessmentId in ['psm', 'vocabulary', 'spelling','3DRotationV1', 'LetterNumberSeriesV1', 'VerbalReasoningV1', 'ProgressiveMatricesV1']:
-        print(task_data.shape)
-        score_df = sc.get_svp_score(task_data, df_metadata, assessmentId, config, study_membership) #TODO rename to indicate that it fetch score
-        print('score_df.shape:', score_df.shape)
+        score_df = sc.get_computed_score(task_data, df_metadata, assessmentId, config, study_membership) 
     elif assessmentId in ['dccs', 'memory-for-sequences', 'fnameb', 'number-match', 'flanker']:
-        score_df = sc.get_common_score(stepdata, task_data, df_metadata, assessmentId, config)   #TODO rename to compute score
+        score_df = sc.compute_scores_from_stepdata(stepdata, task_data, df_metadata, assessmentId, config) 
     else:
         logger.error(f'We have a unkown assessment that we can\'t score: {assessmentId}')
         
