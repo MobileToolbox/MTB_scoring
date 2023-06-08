@@ -5,10 +5,7 @@ import pandas as pd
 from scoremtb.util import score_util as su
 
 def get_common_score(stepdata, task_data, dfid, assmnt_val, config):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    This is the function to process score for common assesments 
+    """Process score for common assesments 
         (like: DCCS, Flanker, MFS, Name Match etc.)
 
     Args: 
@@ -20,8 +17,6 @@ def get_common_score(stepdata, task_data, dfid, assmnt_val, config):
         
     Return:
         A pandas dataframe with MTB scores for a given common assesment
-    
-    -----------------------------------------------------------------------------------------
     """
     step = su.get_identifierinfo(stepdata, assmnt_val)
     
@@ -32,10 +27,7 @@ def get_common_score(stepdata, task_data, dfid, assmnt_val, config):
     return score_df
     
 def evaluate_common_score(data, task_data, dfid, assmnt_val, config):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Preparing scores for common assesments
+    """ Preparing scores for common assesments
 
     Args: 
         data: pandas dataframe with assesment specific processed score
@@ -47,7 +39,6 @@ def evaluate_common_score(data, task_data, dfid, assmnt_val, config):
     Return:
         A pandas dataframe with MTB scores for a given assesment
     
-    -----------------------------------------------------------------------------------------
     """
     common_cols = config['common_cols']
     
@@ -65,10 +56,7 @@ def evaluate_common_score(data, task_data, dfid, assmnt_val, config):
     return score_df
 
 def get_fname_score(data, task_data, dfid, assmnt_val, config):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Preparing scores for fnameb assesments
+    """Prepares scores for fnameb assesments
 
     Args: 
         data: pandas dataframe with processed score for Fnameb assesment
@@ -79,8 +67,6 @@ def get_fname_score(data, task_data, dfid, assmnt_val, config):
     
     Return:
         A pandas dataframe with MTB scores for fname assesment
-    
-    -----------------------------------------------------------------------------------------
     """
     
     common_cols = config['common_cols']
@@ -98,18 +84,13 @@ def get_fname_score(data, task_data, dfid, assmnt_val, config):
     return score_df
 
 def get_lookup(config):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Preparing default lookup matrix for fnameb assesments
+    """ Preparing default lookup matrix for fnameb assesments
 
     Args: 
         config: configuration file object
     
     Return:
         A default lookup scoring pandas dataframe 
-    
-    -----------------------------------------------------------------------------------------
     """
     rawFname = [i for i in range(37)]
     theta = config['theta']
@@ -123,10 +104,7 @@ def get_lookup(config):
     return lookup_df
 
 def get_svp_score(task_data, dfid, assmnt_val, config, study_membership):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    This is the function to process score for common assesments 
+    """This is the function to process score for common assesments 
         (like [SVP]: Spell, Vocab and PSM)
 
     Args: 
@@ -138,8 +116,6 @@ def get_svp_score(task_data, dfid, assmnt_val, config, study_membership):
     
     Return:
         A pandas dataframe with MTB scores for a given assesment
-    
-    -----------------------------------------------------------------------------------------
     """
     common_cols = config['common_cols']
     
@@ -154,10 +130,7 @@ def get_svp_score(task_data, dfid, assmnt_val, config, study_membership):
 
 
 def filter_assesment(assmnt_val, config, task_filter, study_membership):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    This is the function to process score for common assesments 
+    """This is the function to process score for common assesments 
         (like [SVP]: Spell, Vocab and PSM)
 
     Args: 
@@ -168,8 +141,6 @@ def filter_assesment(assmnt_val, config, task_filter, study_membership):
         
     Return:
         A pandas dataframe with processed MTB score for a given assesment
-    
-    -----------------------------------------------------------------------------------------
     """
     score_cols = config['scores_final_cols']
 
@@ -187,10 +158,7 @@ def filter_assesment(assmnt_val, config, task_filter, study_membership):
 
 
 def filter_psm(assmnt_val, config, task_filter):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    This is the function to process score for PSM assesment
+    """This is the function to process score for PSM assesment
 
     Args: 
         assmnt_val: assesment value (PSM)
@@ -199,8 +167,6 @@ def filter_psm(assmnt_val, config, task_filter):
         
     Return:
         A pandas dataframe with processed MTB score for PSM assesment
-    
-    -----------------------------------------------------------------------------------------
     """
     psm_filter = task_filter.loc[((~task_filter[config[assmnt_val + '_adjacentp'][0]].isna()) &
                                  (~task_filter[config[assmnt_val + '_adjacentp'][1]].isna()))]

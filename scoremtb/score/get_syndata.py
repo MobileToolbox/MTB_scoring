@@ -15,10 +15,7 @@ logger=logging.getLogger()
 
 
 def get_s3_fs(entity_id, syn):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Get S3filesystem and bucket path
+    """Get S3filesystem and bucket path
     
     Args:
         entity_id: Synapse entity ID
@@ -26,8 +23,6 @@ def get_s3_fs(entity_id, syn):
         
     Returns:
         results: S3filesystem and path
-        
-    -----------------------------------------------------------------------------------------
     """
     
     token = syn.get_sts_storage_token(entity_id, permission="read_only")
@@ -37,11 +32,8 @@ def get_s3_fs(entity_id, syn):
     bucket_path = token['bucket']+'/'+token['baseKey']+'/'
     return s3, bucket_path
 
-def parquet_2_df(syn, entity_id, dataset):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Loading (from synapse) and converting parquet dataset to pandas dataframe
+def parquet_2_df(syn, entity_id, dataset, filters=None):
+    """Loading (from synapse) and converting parquet dataset to pandas dataframe
     
     Args:
         syn: Synapse client object
@@ -50,14 +42,12 @@ def parquet_2_df(syn, entity_id, dataset):
         
     Returns:
         results: Pandas dataframe with dataset from Synapse.
-        
-    -----------------------------------------------------------------------------------------
     """
     
     s3, bucket_path = get_s3_fs(entity_id, syn)
     dataset_path = bucket_path + dataset
     
-    dataset = pq.ParquetDataset(dataset_path, filesystem=s3)
+    dataset = pq.ParquetDataset(dataset_path, filesystem=s3, filters=filters)
     dfid = dataset.read().to_pandas()
     return dfid
 

@@ -4,10 +4,7 @@
 import pandas as pd
 
 def get_identifierinfo(step_data, assmnt_val):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Getting identifier (event identifier) info using step data
+    """ Getting identifier (event identifier) info using step data
     
     Args: 
         step_data: stepdata pandas dataframe downloaded from Synapse
@@ -15,8 +12,6 @@ def get_identifierinfo(step_data, assmnt_val):
 
     Return:
         A pandas dataframe with identifier specific to given assesment.
-    
-    -----------------------------------------------------------------------------------------
     """
     if assmnt_val == 'dccs' or assmnt_val == 'flanker':
         step_info_response = get_stepdata(step_data, assmnt_val, 'responseTime')
@@ -30,10 +25,7 @@ def get_identifierinfo(step_data, assmnt_val):
     return step_info
 
 def get_stepdata(step_data, assmnt_val, score):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    Filtering step data to get identifier info
+    """Filtering step data to get identifier info
     
     Args: 
         step_data: stepdata pandas dataframe downloaded from Synapse
@@ -42,8 +34,6 @@ def get_stepdata(step_data, assmnt_val, score):
 
     Return:
         A pandas dataframe with filtered identifier info.
-    
-    -----------------------------------------------------------------------------------------
     """
     step_filter = step_data[step_data['assessmentid'] == assmnt_val]
     step_filter = step_filter[['id', 'identifier', score]]
@@ -52,10 +42,7 @@ def get_stepdata(step_data, assmnt_val, score):
     return step_info
 
 def get_scoreitems(assmnt_val, config):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    This is a function to get the attributes/identifiers from config.
+    """This is a function to get the attributes/identifiers from config.
     
     Args:
         assmnt_val: assesment value (like: dccs, flanker etc.)
@@ -63,16 +50,11 @@ def get_scoreitems(assmnt_val, config):
         
     Return:
         A list of assesment attributes/identifiers
-    
-    -----------------------------------------------------------------------------------------
     """
     return config[assmnt_val + '_item']
 
 def process_score(data, assmnt_val, s_items, config):
-    """
-    -----------------------------------------------------------------------------------------
-    
-    This is the function to process score 
+    """This is the function to process score 
 
     Args: 
         data: filtered step data pandas dataframe
@@ -82,8 +64,6 @@ def process_score(data, assmnt_val, s_items, config):
     
     Return:
         A pandas dataframe with processed MTB score
-    
-    -----------------------------------------------------------------------------------------
     """
     if assmnt_val == 'dccs' or assmnt_val == 'flanker':
         s_items1 = [item for item in s_items if item in list(data[0].columns)]
