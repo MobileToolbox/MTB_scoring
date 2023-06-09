@@ -21,7 +21,7 @@ def compute_scores_from_stepdata(stepdata, task_data, df_metadata, assessmentId,
     """
     step = su.get_identifierinfo(stepdata, assessmentId)
     
-    scoreitem = su.get_scoreitems(assessmentId, config)
+    scoreitem =  config[assessmentId + '_item']
     scoresum = su.process_score(step, assessmentId, scoreitem, config)
     
     score_df = evaluate_common_score(scoresum, task_data, df_metadata, assessmentId, config)
@@ -118,45 +118,24 @@ def get_computed_score(task_data, df_metadata, assessmentId, config, study_membe
         A pandas dataframe with MTB scores for a given assesment
     """
     common_cols = config['common_cols'] #Columns to use out of the taskdata dataframe
+    score_cols = config['scores_final_cols']
     
     #Filter down the taskdata to specific assessment
     task_filter = task_data[task_data['assessmentid'] == assessmentId].reset_index()
-    #Rename score columns TODO evaluate if this is necessary and remove if not.
-    task_filter = filter_assesment(assessmentId, config, task_filter)
+    #Renames score columns TODO (@larssono June-2023) evaluate if this is necessary and remove if not.
+    if assessmentId == 'psm':
+        task_filter = filter_psm(assessmentId, config, task_filter) 
+    elif assessmentId in ['LetterNumberSeriesV1', 'VerbalReasoningV1']:#TODO (@larssono June-2023) remove specific use case.  
+        task_filter[config[assessmentId + '_score']] = task_filter[['scores_rawScore']]
+    elif assessmentId in ['3DRotationV1', 'ProgressiveMatricesV1']:  
+        task_filter[config[assessmentId + '_score']] = task_filter[['scores_startTheta', 'scores_startSE', 'scores_finalTheta', 'scores_finalSE', 'scores_itemCount']]
+    else:
+        task_filter[config[assessmentId + '_score']] = task_filter[score_cols] 
+
     task_filter = task_filter[['recordid', 'steps'] + config[assessmentId + '_score']]
     merge_df = task_filter.merge(df_metadata, on = 'recordid', how = 'left')
     score_df = merge_df[common_cols + config[assessmentId + '_score']]
     return score_df
-
-#TODO move this up to get_svp_score
-def filter_assesment(assessmentId, config, task_filter):
-    """This is the function to process score for common assesments 
-        (like [SVP]: Spell, Vocab and PSM)
-
-    Args: 
-        assessmentId: assesment value (like: spelling, vocabulary and PSM)
-        config: configuration file object
-        task_filter: assesment wise filtered taskdata pandas dataframe
-        
-    Return:
-        A pandas dataframe with processed MTB score for a given assesment
-    """
-    score_cols = config['scores_final_cols']
-
-    ## Fix issue where scores are sometimes stored under scores_finalTheta_double and scores_finalSE_double and
-    ## other times: scores_finalTheta, scores_finalSE
-    ## Likely related to: Glue Bug in BridgeDownstream:  https://sagebionetworks.jira.com/browse/ETL-238
-    score_cols = [col if col in task_filter.columns else col+'_double'  for col in score_cols]
-    
-    if assessmentId == 'psm':
-        task_filter = filter_psm(assessmentId, config, task_filter)
-    elif assessmentId in ['LetterNumberSeriesV1', 'VerbalReasoningV1']:  #TODO remove specific use case.
-        task_filter[config[assessmentId + '_score']] = task_filter[['scores_rawScore']]
-    else:
-        #TODO why are we renaming the score columns.  If we remove this we can simplify the processing code signifantly 
-        # and remove a bunch of values out of the config file.
-        task_filter[config[assessmentId + '_score']] = task_filter[score_cols]
-    return task_filter
 
 
 def filter_psm(assessmentId, config, task_filter):

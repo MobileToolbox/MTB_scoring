@@ -41,17 +41,6 @@ def get_stepdata(step_data, assmnt_val, score):
     step_info = step_filter.pivot_table(values=score, index='id', columns='identifier').reset_index('id') 
     return step_info
 
-def get_scoreitems(assmnt_val, config):
-    """This is a function to get the attributes/identifiers from config.
-    
-    Args:
-        assmnt_val: assesment value (like: dccs, flanker etc.)
-        config: configuration file object
-        
-    Return:
-        A list of assesment attributes/identifiers
-    """
-    return config[assmnt_val + '_item']
 
 def process_score(data, assmnt_val, s_items, config):
     """This is the function to process score 
@@ -65,6 +54,7 @@ def process_score(data, assmnt_val, s_items, config):
     Return:
         A pandas dataframe with processed MTB score
     """
+
     if assmnt_val == 'dccs' or assmnt_val == 'flanker':
         s_items1 = [item for item in s_items if item in list(data[0].columns)]
         s_items2 = [item for item in s_items if item in list(data[1].columns)]
