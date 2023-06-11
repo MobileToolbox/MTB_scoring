@@ -4,6 +4,7 @@
 import synapseclient
 from pyarrow import fs
 import pyarrow.parquet as pq
+from collections import defaultdict
 
 import pandas as pd
 import os
@@ -54,3 +55,47 @@ def parquet_2_df(syn, entity_id, dataset, filters=None):
     return dfid
 
 
+def merge_score_columns(df):
+    """Merges columns with same name but different extensions
+       Fix issue where scores are sometimes stored under scores_finalTheta_double and scores_finalSE_double and
+       other times: scores_finalTheta, scores_finalSE
+       Likely related to: Glue Bug in BridgeDownstream:  https://sagebionetworks.jira.com/browse/ETL-238
+
+
+    Args:
+        df: data frame with columns names scores_...
+
+    Returns:
+        results: Pandas dataframe.
+    """
+    # Regular expression patterns
+    pattern_int = re.compile(r'^(.+)_int$')
+    pattern_double = re.compile(r'^(.+)_double$')
+
+    score_cols = [name for name in df.columns if name.startswith('scores_')]
+
+    #Group columns based on extensions _int _double etc.
+    grouped_names = defaultdict(list)
+    for value in score_cols:
+        match_int = pattern_int.match(value)
+        match_double = pattern_double.match(value)
+        if match_int:
+            name = match_int.group(1)
+        elif match_double:
+            name = match_double.group(1)
+        else:
+            name = value
+        grouped_names[name].append(value)
+
+    #Go through every column base name (e.g finalTheta) and reassign to basename e.g. finalTheta_int to finalTheta
+    for name, values in grouped_names.items():
+        if len(values)==1 and name==values[0]: #We only have one column and it is correct.
+            continue
+        if len(values)==1: #There is one column but it has the wrong name
+            df.rename(columns={values[0]: name})
+        elif len(values)==2:
+            df[name] = df[values[0]].combine_first(df[values[1]])
+            df = df.drop(values, axis=1)
+        else:
+            logger.error(f'There are to many score Columns for {name}: {values}')
+    return df
