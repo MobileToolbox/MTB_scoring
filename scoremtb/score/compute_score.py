@@ -6,7 +6,6 @@ from scoremtb.util import util as ut
 from scoremtb.score import score_commons as sc
 import logging
 
-logging.basicConfig(level=logging.INFO)
 logger=logging.getLogger()
 
 def get_score(task_data, stepdata, df_metadata, assessmentId, study_membership):
