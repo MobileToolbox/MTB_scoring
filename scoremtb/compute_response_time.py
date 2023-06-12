@@ -109,7 +109,6 @@ def impute_missing_response_timing(syn, project_id, df_stepdata, filters, assess
                                 .values)
 
     #Merge new itming information with df_stepdata
-    #TODO move the imputed_rt_ms  to responseTime if happy with results
     return df_stepdata.merge(timing,
                              left_on= ['recordid', 'identifier', 'id'],
                              right_on=['recordid', 'stepIdentifier', 'id', ])

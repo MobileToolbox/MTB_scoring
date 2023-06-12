@@ -1,6 +1,68 @@
 {
     "sd": [0.583,0.565,0.55,0.54,0.532,0.527,0.523,0.52,0.518,0.516,0.513,0.51,0.506,0.502,0.496,0.489,0.482,0.475,0.469,0.463,0.458,0.454,0.451,0.449,0.449,0.45,0.453,0.457,0.462,0.47,0.479,0.491,0.505,0.523,0.546,0.573,0.608],
     "theta": [-3.532,-3.306,-3.102,-2.916,-2.746,-2.59,-2.445,-2.31,-2.183,-2.061,-1.944,-1.83,-1.717,-1.603,-1.487,-1.368,-1.245,-1.117,-0.985,-0.848,-0.707,-0.561,-0.411,-0.256,-0.098,0.066,0.234,0.407,0.587,0.774,0.97,1.176,1.395,1.63,1.886,2.168,2.485],
+    "dataset_paths": {
+        "dccs": {
+            "step_path": "dataset_sharedschema_v1_steps/",
+            "task_path": "dataset_sharedschema_v1/",
+            "task_status_path": "dataset_sharedschema_v1_taskStatus/"
+        },
+        "flanker": {
+            "step_path": "dataset_sharedschema_v1_steps/",
+            "task_path": "dataset_sharedschema_v1/",
+            "task_status_path": "dataset_sharedschema_v1_taskStatus/"
+        },
+        "fnameb": {
+            "step_path": "dataset_sharedschema_v1_steps/",
+            "task_path": "dataset_sharedschema_v1/",
+            "task_status_path": "dataset_sharedschema_v1_taskStatus/"
+        },
+        "memory-for-sequences": {
+            "step_path": "dataset_sharedschema_v1_steps/",
+            "task_path": "dataset_sharedschema_v1/",
+            "task_status_path": "dataset_sharedschema_v1_taskStatus/"
+        },
+        "number-match": {
+            "step_path": "dataset_sharedschema_v1_steps/",
+            "task_path": "dataset_sharedschema_v1/",
+            "task_status_path": "dataset_sharedschema_v1_taskStatus/"
+        },
+        "psm": {
+            "step_path": "dataset_sharedschema_v1_steps/",
+            "task_path": "dataset_sharedschema_v1/",
+            "task_status_path": "dataset_sharedschema_v1_taskStatus/"
+        },
+        "spelling": {
+            "step_path": "dataset_sharedschema_v1_steps/",
+            "task_path": "dataset_sharedschema_v1/",
+            "task_status_path": "dataset_sharedschema_v1_taskStatus/"
+        },
+        "vocabulary": {
+            "step_path": "dataset_sharedschema_v1_steps/",
+            "task_path": "dataset_sharedschema_v1/",
+            "task_status_path": "dataset_sharedschema_v1_taskStatus/"
+        },
+        "3DRotationV1": {
+            "step_path": "dataset_3drotation_v1_steps",
+            "task_path": "dataset_3drotation_v1",
+            "task_status_path": null
+        },
+        "LetterNumberSeriesV1": {
+            "step_path": "dataset_letternumberseries_v1_steps",
+            "task_path": "dataset_letternumberseries_v1",
+            "task_status_path": null
+        },
+        "VerbalReasoningV1": {
+            "step_path": "dataset_verbalreasoning_v1_steps",
+            "task_path": "dataset_verbalreasoning_v1",
+            "task_status_path": null
+        },
+        "ProgressiveMatricesV1": {
+            "step_path": "dataset_progressivematrices_v1_steps",
+            "task_path": "dataset_progressivematrices_v1",
+            "task_status_path": null
+        }
+    },
     
     "dccs_score": ["dccs_time", "dccs_score", "dccs_accuracy"],
     "flanker_score": ["flkr_time", "flkr_score", "flkr_accuracy"],
@@ -11,13 +73,16 @@
     "vocabulary_score": ["vocab_theta", "vocab_se"],
     "spelling_score": ["spell_theta", "spell_se"],
     "psm_score": ["psm.adj.sum", "psm.exact.sum"],
-
+    "3DRotationV1_score": ["3drotation_startTheta", "3drotation_startSE", "3drotation_finalTheta", "3drotation_finalSE", "3drotation_itemCount"],
+    "ProgressiveMatricesV1_score": ["progressivematrices_startTheta", "progressivematrices_startSE", "progressivematrices_finalTheta", "progressivematrices_finalSE", "progressivematrices_itemCount"],
+    "LetterNumberSeriesV1_score": ["letternumberseries_raw"],  
+    "VerbalReasoningV1_score": ["verbalreasoning_raw"],
     "psm_adjacentp": ["scores_adjacentPairs1", "scores_adjacentPairs2"],
     "psm_exactm": ["scores_exactMatch1", "scores_exactMatch2"],
 
     "scores_final_cols": ["scores_finalTheta", "scores_finalSE"],
     
-    "common_cols": ["healthcode", "recordid", "assessmentid", "deviceInfo", "startDate", "endDate", "participantversion", "clientinfo", "sessionguid", "taskStatus_val", "sessionstarteventid"],
+    "common_cols": ["healthcode", "recordid", "assessmentid", "deviceInfo", "startDate", "endDate", "participantversion", "clientinfo", "sessionguid", "taskStatus", "sessionstarteventid"],
     
     "memory-for-sequences_item": ["MFS_2_1", "MFS_2_2", "MFS_2_3", "MFS_3_1", "MFS_3_2", "MFS_3_3", "MFS_3_4", "MFS_3_5", "MFS_3_6", "MFS_4_1", "MFS_4_2", "MFS_4_3", "MFS_5_1", "MFS_5_2", "MFS_5_3", "MFS_6_1", "MFS_6_2", "MFS_6_3", "MFS_7_1", "MFS_7_2", "MFS_7_3", "MFS_8_1", "MFS_8_2", "MFS_8_3", "MFS_9_1", "MFS_9_2", "MFS_9_3", "MFS_10_1", "MFS_10_2", "MFS_10_3"],
     
