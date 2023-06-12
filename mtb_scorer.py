@@ -195,5 +195,5 @@ if __name__ == "__main__":
         #Output the scores
         file_path = os.path.join(home_path, 'MTB_' + study['studyId'] + '_scores.csv')
         stack_merged.to_csv(file_path, index=False)
-        #upload_score(syn, file_path, args.git, study['scoreFolderId'])
-        #clean_score(file_path)#cleaning processed score
+        upload_score(syn, file_path, args.git, study['scoreFolderId'])
+        clean_score(file_path)#cleaning processed score
