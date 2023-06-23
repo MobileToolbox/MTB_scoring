@@ -107,12 +107,12 @@ def get_studyreference(syn, table_id):
     Return:
         participant info pandas dataframe
     """
-    table_syn = syn.tableQuery('SELECT healthCode, participantVersion, studyMemberships FROM '+ table_id)
+    table_syn = syn.tableQuery('SELECT healthCode, dataGroups, participantVersion, studyMemberships FROM '+ table_id)
     
     study_reference = (table_syn.asDataFrame()
                          .sort_values(by=['healthCode', 'participantVersion'])
                          .reset_index(drop=True)
-                         .loc[:,['healthCode','studyMemberships']]
+                         .loc[:,['healthCode', 'studyMemberships', 'dataGroups']]
                          .rename(columns={"healthCode": "healthcode"})
                          .drop_duplicates(keep='last').reset_index(drop=True)
                       )
@@ -171,6 +171,7 @@ if __name__ == "__main__":
             study_df = get_studyreference(syn, study['participantVersionsId'])
             df_allmetadata = gsyn.parquet_2_df(syn, study['parquetFolderId'], 'dataset_archivemetadata_v1')
             df_allmetadata = df_allmetadata.drop_duplicates(subset=df_allmetadata.columns.difference(['files'])) #Remove duplicated rows
+            df_allmetadata = df_allmetadata.drop(columns='dataGroups', errors='ignore')
         except (FileNotFoundError, TypeError) as error:
             logging.warning(f"Skipping {study['name']} - {study['studyId']} ({study['id']}) it doesn\'t have required data elements: {error}")
             continue

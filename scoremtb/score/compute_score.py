@@ -57,7 +57,7 @@ def combine_scores(score_list, df_metadata):
     -----------------------------------------------------------------------------------------
     """
 
-    groups = df_metadata[['dataGroups','healthcode', 'recordid']]
+    groups = df_metadata[['healthcode', 'recordid']]
     groups = groups.drop_duplicates()
     
     df_combine = pd.concat(score_list).reset_index(drop=True)
